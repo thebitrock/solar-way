@@ -1,0 +1,15 @@
+{
+  "staging": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-solarway-staging-7f3d4-authRole",
+      "UnauthRoleArn": "arn:aws:iam::449286175021:role/amplify-solarway-staging-7f3d4-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::449286175021:role/amplify-solarway-staging-7f3d4-authRole",
+      "Region": "eu-central-1",
+      "DeploymentBucketName": "amplify-solarway-staging-7f3d4-deployment",
+      "UnauthRoleName": "amplify-solarway-staging-7f3d4-unauthRole",
+      "StackName": "amplify-solarway-staging-7f3d4",
+      "StackId": "arn:aws:cloudformation:eu-central-1:449286175021:stack/amplify-solarway-staging-7f3d4/7591f160-eb29-11ef-8e21-068e4d464399",
+      "AmplifyAppId": "d18dm2hufwoub0"
+    }
+  }
+}
