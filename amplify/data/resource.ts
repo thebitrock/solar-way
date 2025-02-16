@@ -18,6 +18,7 @@ const schema = a.schema({
       vocSTC: a.float(),
       temperatureCoefficientOfVOC: a.float(),
     })
+    .authorization((allow) => [allow.guest()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
