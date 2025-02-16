@@ -9,14 +9,17 @@ and "delete" any "Todo" records.
 const schema = a.schema({
   Manufacturer: a
     .model({
-      name: a.string(),
+      name: a.string().required(),
+      solarPanels: a.hasMany('SolarPanel', 'manufacturerId')
     })
     .authorization((allow) => [allow.guest()]),
   SolarPanel: a.
     model({
-      name: a.string(),
-      vocSTC: a.float(),
-      temperatureCoefficientOfVOC: a.float(),
+      manufacturer: a.belongsTo('Manufacturer', 'manufacturerId'),
+      manufacturerId: a.id().required(),
+      name: a.string().required(),
+      vocSTC: a.float().required(),
+      temperatureCoefficientOfVOC: a.float().required(),
     })
     .authorization((allow) => [allow.guest()]),
 });

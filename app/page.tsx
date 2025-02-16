@@ -8,6 +8,7 @@ import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 import ManufacturerCreateForm from '@/ui-components/ManufacturerCreateForm';
 import { Card, Grid, SelectField } from '@aws-amplify/ui-react';
+import SolarPanelCreateForm from '@/ui-components/SolarPanelCreateForm';
 // import { ManufacturerSelectField } from './components/ManufacturerSelectField';
 
 Amplify.configure(outputs);
@@ -26,13 +27,6 @@ export default function App() {
   useEffect(() => {
     listManufacturer();
   }, []);
-
-  function createManufacturer() {
-    client.models.Manufacturer.create({
-      name: window.prompt("Manufacturer name"),
-    });
-  }
-
 
   function deleteManufacturer(id: string) {
     client.models.Manufacturer.delete({ id })
@@ -60,20 +54,20 @@ export default function App() {
             label="Manufacturer"
             descriptiveText="Which manufacturer of solar panels?"
           >
-            {manufacturerList.map((manufacturer) => (<option value={manufacturer.id}>{manufacturer.name}</option>))}
+            {manufacturerList.map((manufacturer) => (<option key={manufacturer.id}>{manufacturer.name}</option>))}
           </SelectField>
         </Card>
         <Card
           columnStart="1"
           columnEnd="-1"
         >
+          <SolarPanelCreateForm/>
           Footer
         </Card>
       </Grid>
       <ManufacturerCreateForm />
       {/* <ManufacturerSelectField/> */}
       <h1>Manufactur list</h1>
-      <button onClick={createManufacturer}>+ new</button>
       <ul>
         {manufacturerList.map((manufacturer) => (
           <li

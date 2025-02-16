@@ -10,18 +10,34 @@ export const onCreateManufacturer = /* GraphQL */ `
       createdAt
       id
       name
+      solarPanels {
+        nextToken
+        __typename
+      }
       updatedAt
       __typename
     }
   }
 `;
-export const onCreateTodo = /* GraphQL */ `
-  subscription OnCreateTodo($filter: ModelSubscriptionTodoFilterInput) {
-    onCreateTodo(filter: $filter) {
-      content
+export const onCreateSolarPanel = /* GraphQL */ `
+  subscription OnCreateSolarPanel(
+    $filter: ModelSubscriptionSolarPanelFilterInput
+  ) {
+    onCreateSolarPanel(filter: $filter) {
       createdAt
       id
+      manufacturer {
+        createdAt
+        id
+        name
+        updatedAt
+        __typename
+      }
+      manufacturerId
+      name
+      temperatureCoefficientOfVOC
       updatedAt
+      vocSTC
       __typename
     }
   }
@@ -34,18 +50,34 @@ export const onDeleteManufacturer = /* GraphQL */ `
       createdAt
       id
       name
+      solarPanels {
+        nextToken
+        __typename
+      }
       updatedAt
       __typename
     }
   }
 `;
-export const onDeleteTodo = /* GraphQL */ `
-  subscription OnDeleteTodo($filter: ModelSubscriptionTodoFilterInput) {
-    onDeleteTodo(filter: $filter) {
-      content
+export const onDeleteSolarPanel = /* GraphQL */ `
+  subscription OnDeleteSolarPanel(
+    $filter: ModelSubscriptionSolarPanelFilterInput
+  ) {
+    onDeleteSolarPanel(filter: $filter) {
       createdAt
       id
+      manufacturer {
+        createdAt
+        id
+        name
+        updatedAt
+        __typename
+      }
+      manufacturerId
+      name
+      temperatureCoefficientOfVOC
       updatedAt
+      vocSTC
       __typename
     }
   }
@@ -58,18 +90,34 @@ export const onUpdateManufacturer = /* GraphQL */ `
       createdAt
       id
       name
+      solarPanels {
+        nextToken
+        __typename
+      }
       updatedAt
       __typename
     }
   }
 `;
-export const onUpdateTodo = /* GraphQL */ `
-  subscription OnUpdateTodo($filter: ModelSubscriptionTodoFilterInput) {
-    onUpdateTodo(filter: $filter) {
-      content
+export const onUpdateSolarPanel = /* GraphQL */ `
+  subscription OnUpdateSolarPanel(
+    $filter: ModelSubscriptionSolarPanelFilterInput
+  ) {
+    onUpdateSolarPanel(filter: $filter) {
       createdAt
       id
+      manufacturer {
+        createdAt
+        id
+        name
+        updatedAt
+        __typename
+      }
+      manufacturerId
+      name
+      temperatureCoefficientOfVOC
       updatedAt
+      vocSTC
       __typename
     }
   }

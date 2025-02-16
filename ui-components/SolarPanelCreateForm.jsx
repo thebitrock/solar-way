@@ -4,13 +4,11 @@ import * as React from "react";
 import { Button, Flex, Grid, TextField } from "@aws-amplify/ui-react";
 import { fetchByPath, getOverrideProps, validateField } from "./utils";
 import { generateClient } from "aws-amplify/api";
-import { getManufacturer } from "./graphql/queries";
-import { updateManufacturer } from "./graphql/mutations";
+import { createSolarPanel } from "./graphql/mutations";
 const client = generateClient();
-export default function ManufacturerUpdateForm(props) {
+export default function SolarPanelCreateForm(props) {
   const {
-    id: idProp,
-    manufacturer: manufacturerModelProp,
+    clearOnSuccess = true,
     onSuccess,
     onError,
     onSubmit,
@@ -21,36 +19,24 @@ export default function ManufacturerUpdateForm(props) {
   } = props;
   const initialValues = {
     name: "",
+    vocSTC: "",
+    temperatureCoefficientOfVOC: "",
   };
   const [name, setName] = React.useState(initialValues.name);
+  const [vocSTC, setVocSTC] = React.useState(initialValues.vocSTC);
+  const [temperatureCoefficientOfVOC, setTemperatureCoefficientOfVOC] =
+    React.useState(initialValues.temperatureCoefficientOfVOC);
   const [errors, setErrors] = React.useState({});
   const resetStateValues = () => {
-    const cleanValues = manufacturerRecord
-      ? { ...initialValues, ...manufacturerRecord }
-      : initialValues;
-    setName(cleanValues.name);
+    setName(initialValues.name);
+    setVocSTC(initialValues.vocSTC);
+    setTemperatureCoefficientOfVOC(initialValues.temperatureCoefficientOfVOC);
     setErrors({});
   };
-  const [manufacturerRecord, setManufacturerRecord] = React.useState(
-    manufacturerModelProp
-  );
-  React.useEffect(() => {
-    const queryData = async () => {
-      const record = idProp
-        ? (
-            await client.graphql({
-              query: getManufacturer.replaceAll("__typename", ""),
-              variables: { id: idProp },
-            })
-          )?.data?.getManufacturer
-        : manufacturerModelProp;
-      setManufacturerRecord(record);
-    };
-    queryData();
-  }, [idProp, manufacturerModelProp]);
-  React.useEffect(resetStateValues, [manufacturerRecord]);
   const validations = {
     name: [{ type: "Required" }],
+    vocSTC: [{ type: "Required" }],
+    temperatureCoefficientOfVOC: [{ type: "Required" }],
   };
   const runValidationTasks = async (
     fieldName,
@@ -79,6 +65,8 @@ export default function ManufacturerUpdateForm(props) {
         event.preventDefault();
         let modelFields = {
           name,
+          vocSTC,
+          temperatureCoefficientOfVOC,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -109,16 +97,18 @@ export default function ManufacturerUpdateForm(props) {
             }
           });
           await client.graphql({
-            query: updateManufacturer.replaceAll("__typename", ""),
+            query: createSolarPanel.replaceAll("__typename", ""),
             variables: {
               input: {
-                id: manufacturerRecord.id,
                 ...modelFields,
               },
             },
           });
           if (onSuccess) {
             onSuccess(modelFields);
+          }
+          if (clearOnSuccess) {
+            resetStateValues();
           }
         } catch (err) {
           if (onError) {
@@ -127,7 +117,7 @@ export default function ManufacturerUpdateForm(props) {
           }
         }
       }}
-      {...getOverrideProps(overrides, "ManufacturerUpdateForm")}
+      {...getOverrideProps(overrides, "SolarPanelCreateForm")}
       {...rest}
     >
       <TextField
@@ -140,6 +130,8 @@ export default function ManufacturerUpdateForm(props) {
           if (onChange) {
             const modelFields = {
               name: value,
+              vocSTC,
+              temperatureCoefficientOfVOC,
             };
             const result = onChange(modelFields);
             value = result?.name ?? value;
@@ -154,19 +146,83 @@ export default function ManufacturerUpdateForm(props) {
         hasError={errors.name?.hasError}
         {...getOverrideProps(overrides, "name")}
       ></TextField>
+      <TextField
+        label="Voc stc"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={vocSTC}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC: value,
+              temperatureCoefficientOfVOC,
+            };
+            const result = onChange(modelFields);
+            value = result?.vocSTC ?? value;
+          }
+          if (errors.vocSTC?.hasError) {
+            runValidationTasks("vocSTC", value);
+          }
+          setVocSTC(value);
+        }}
+        onBlur={() => runValidationTasks("vocSTC", vocSTC)}
+        errorMessage={errors.vocSTC?.errorMessage}
+        hasError={errors.vocSTC?.hasError}
+        {...getOverrideProps(overrides, "vocSTC")}
+      ></TextField>
+      <TextField
+        label="Temperature coefficient of voc"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={temperatureCoefficientOfVOC}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC: value,
+            };
+            const result = onChange(modelFields);
+            value = result?.temperatureCoefficientOfVOC ?? value;
+          }
+          if (errors.temperatureCoefficientOfVOC?.hasError) {
+            runValidationTasks("temperatureCoefficientOfVOC", value);
+          }
+          setTemperatureCoefficientOfVOC(value);
+        }}
+        onBlur={() =>
+          runValidationTasks(
+            "temperatureCoefficientOfVOC",
+            temperatureCoefficientOfVOC
+          )
+        }
+        errorMessage={errors.temperatureCoefficientOfVOC?.errorMessage}
+        hasError={errors.temperatureCoefficientOfVOC?.hasError}
+        {...getOverrideProps(overrides, "temperatureCoefficientOfVOC")}
+      ></TextField>
       <Flex
         justifyContent="space-between"
         {...getOverrideProps(overrides, "CTAFlex")}
       >
         <Button
-          children="Reset"
+          children="Clear"
           type="reset"
           onClick={(event) => {
             event.preventDefault();
             resetStateValues();
           }}
-          isDisabled={!(idProp || manufacturerModelProp)}
-          {...getOverrideProps(overrides, "ResetButton")}
+          {...getOverrideProps(overrides, "ClearButton")}
         ></Button>
         <Flex
           gap="15px"
@@ -176,10 +232,7 @@ export default function ManufacturerUpdateForm(props) {
             children="Submit"
             type="submit"
             variation="primary"
-            isDisabled={
-              !(idProp || manufacturerModelProp) ||
-              Object.values(errors).some((e) => e?.hasError)
-            }
+            isDisabled={Object.values(errors).some((e) => e?.hasError)}
             {...getOverrideProps(overrides, "SubmitButton")}
           ></Button>
         </Flex>

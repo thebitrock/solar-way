@@ -11,21 +11,35 @@ export const createManufacturer = /* GraphQL */ `
       createdAt
       id
       name
+      solarPanels {
+        nextToken
+        __typename
+      }
       updatedAt
       __typename
     }
   }
 `;
-export const createTodo = /* GraphQL */ `
-  mutation CreateTodo(
-    $condition: ModelTodoConditionInput
-    $input: CreateTodoInput!
+export const createSolarPanel = /* GraphQL */ `
+  mutation CreateSolarPanel(
+    $condition: ModelSolarPanelConditionInput
+    $input: CreateSolarPanelInput!
   ) {
-    createTodo(condition: $condition, input: $input) {
-      content
+    createSolarPanel(condition: $condition, input: $input) {
       createdAt
       id
+      manufacturer {
+        createdAt
+        id
+        name
+        updatedAt
+        __typename
+      }
+      manufacturerId
+      name
+      temperatureCoefficientOfVOC
       updatedAt
+      vocSTC
       __typename
     }
   }
@@ -39,21 +53,35 @@ export const deleteManufacturer = /* GraphQL */ `
       createdAt
       id
       name
+      solarPanels {
+        nextToken
+        __typename
+      }
       updatedAt
       __typename
     }
   }
 `;
-export const deleteTodo = /* GraphQL */ `
-  mutation DeleteTodo(
-    $condition: ModelTodoConditionInput
-    $input: DeleteTodoInput!
+export const deleteSolarPanel = /* GraphQL */ `
+  mutation DeleteSolarPanel(
+    $condition: ModelSolarPanelConditionInput
+    $input: DeleteSolarPanelInput!
   ) {
-    deleteTodo(condition: $condition, input: $input) {
-      content
+    deleteSolarPanel(condition: $condition, input: $input) {
       createdAt
       id
+      manufacturer {
+        createdAt
+        id
+        name
+        updatedAt
+        __typename
+      }
+      manufacturerId
+      name
+      temperatureCoefficientOfVOC
       updatedAt
+      vocSTC
       __typename
     }
   }
@@ -67,21 +95,35 @@ export const updateManufacturer = /* GraphQL */ `
       createdAt
       id
       name
+      solarPanels {
+        nextToken
+        __typename
+      }
       updatedAt
       __typename
     }
   }
 `;
-export const updateTodo = /* GraphQL */ `
-  mutation UpdateTodo(
-    $condition: ModelTodoConditionInput
-    $input: UpdateTodoInput!
+export const updateSolarPanel = /* GraphQL */ `
+  mutation UpdateSolarPanel(
+    $condition: ModelSolarPanelConditionInput
+    $input: UpdateSolarPanelInput!
   ) {
-    updateTodo(condition: $condition, input: $input) {
-      content
+    updateSolarPanel(condition: $condition, input: $input) {
       createdAt
       id
+      manufacturer {
+        createdAt
+        id
+        name
+        updatedAt
+        __typename
+      }
+      manufacturerId
+      name
+      temperatureCoefficientOfVOC
       updatedAt
+      vocSTC
       __typename
     }
   }

@@ -8,18 +8,32 @@ export const getManufacturer = /* GraphQL */ `
       createdAt
       id
       name
+      solarPanels {
+        nextToken
+        __typename
+      }
       updatedAt
       __typename
     }
   }
 `;
-export const getTodo = /* GraphQL */ `
-  query GetTodo($id: ID!) {
-    getTodo(id: $id) {
-      content
+export const getSolarPanel = /* GraphQL */ `
+  query GetSolarPanel($id: ID!) {
+    getSolarPanel(id: $id) {
       createdAt
       id
+      manufacturer {
+        createdAt
+        id
+        name
+        updatedAt
+        __typename
+      }
+      manufacturerId
+      name
+      temperatureCoefficientOfVOC
       updatedAt
+      vocSTC
       __typename
     }
   }
@@ -43,18 +57,21 @@ export const listManufacturers = /* GraphQL */ `
     }
   }
 `;
-export const listTodos = /* GraphQL */ `
-  query ListTodos(
-    $filter: ModelTodoFilterInput
+export const listSolarPanels = /* GraphQL */ `
+  query ListSolarPanels(
+    $filter: ModelSolarPanelFilterInput
     $limit: Int
     $nextToken: String
   ) {
-    listTodos(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    listSolarPanels(filter: $filter, limit: $limit, nextToken: $nextToken) {
       items {
-        content
         createdAt
         id
+        manufacturerId
+        name
+        temperatureCoefficientOfVOC
         updatedAt
+        vocSTC
         __typename
       }
       nextToken

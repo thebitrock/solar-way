@@ -1,4 +1,4 @@
-export { default as TodoCreateForm } from "./TodoCreateForm";
-export { default as TodoUpdateForm } from "./TodoUpdateForm";
 export { default as ManufacturerCreateForm } from "./ManufacturerCreateForm";
 export { default as ManufacturerUpdateForm } from "./ManufacturerUpdateForm";
+export { default as SolarPanelCreateForm } from "./SolarPanelCreateForm";
+export { default as SolarPanelUpdateForm } from "./SolarPanelUpdateForm";

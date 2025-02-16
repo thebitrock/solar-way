@@ -27,7 +27,7 @@ export default function ManufacturerCreateForm(props) {
     setErrors({});
   };
   const validations = {
-    name: [],
+    name: [{ type: "Required" }],
   };
   const runValidationTasks = async (
     fieldName,
@@ -111,7 +111,7 @@ export default function ManufacturerCreateForm(props) {
     >
       <TextField
         label="Name"
-        isRequired={false}
+        isRequired={true}
         isReadOnly={false}
         value={name}
         onChange={(e) => {
