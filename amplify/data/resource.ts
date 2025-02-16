@@ -12,6 +12,12 @@ const schema = a.schema({
       name: a.string(),
     })
     .authorization((allow) => [allow.guest()]),
+  SolarPanel: a.
+    model({
+      name: a.string(),
+      vocSTC: a.float(),
+      temperatureCoefficientOfVOC: a.float(),
+    })
 });
 
 export type Schema = ClientSchema<typeof schema>;

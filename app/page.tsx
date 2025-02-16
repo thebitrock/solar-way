@@ -7,6 +7,7 @@ import type { Schema } from "@/amplify/data/resource";
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 import ManufacturerCreateForm from '@/ui-components/ManufacturerCreateForm';
+import { Card, Grid, SelectField } from '@aws-amplify/ui-react';
 // import { ManufacturerSelectField } from './components/ManufacturerSelectField';
 
 Amplify.configure(outputs);
@@ -32,22 +33,52 @@ export default function App() {
     });
   }
 
-    
+
   function deleteManufacturer(id: string) {
     client.models.Manufacturer.delete({ id })
   }
 
   return (
-    <main> 
-      <ManufacturerCreateForm/>
+    <main>
+      <Grid
+        columnGap="0.5rem"
+        rowGap="0.5rem"
+        templateColumns="1fr 1fr 1fr"
+        templateRows="1fr 3fr 1fr"
+      >
+        <Card
+          columnStart="1"
+          columnEnd="-1"
+        >
+          Voltage calculator
+        </Card>
+        <Card
+          columnStart="1"
+          columnEnd="1"
+        >
+          <SelectField
+            label="Manufacturer"
+            descriptiveText="Which manufacturer of solar panels?"
+          >
+            {manufacturerList.map((manufacturer) => (<option value={manufacturer.id}>{manufacturer.name}</option>))}
+          </SelectField>
+        </Card>
+        <Card
+          columnStart="1"
+          columnEnd="-1"
+        >
+          Footer
+        </Card>
+      </Grid>
+      <ManufacturerCreateForm />
       {/* <ManufacturerSelectField/> */}
       <h1>Manufactur list</h1>
       <button onClick={createManufacturer}>+ new</button>
       <ul>
         {manufacturerList.map((manufacturer) => (
-          <li 
-          onClick={() => deleteManufacturer(manufacturer.id)}
-          key={manufacturer.id}>{manufacturer.name}</li>
+          <li
+            onClick={() => deleteManufacturer(manufacturer.id)}
+            key={manufacturer.id}>{manufacturer.name}</li>
         ))}
       </ul>
       {/* <div>
