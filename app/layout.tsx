@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import '@aws-amplify/ui-react/styles/reset.layer.css' // global CSS reset
+import '@aws-amplify/ui-react/styles/base.layer.css' // base styling needed for Amplify UI
+import '@aws-amplify/ui-react/styles/button.layer.css' // component specific styles
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

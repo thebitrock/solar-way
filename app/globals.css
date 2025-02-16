@@ -2,12 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:slnt,wght@-10..0,100..900&display=swap'); */
+
+html {
+  /* this enables some alternative styles and contextual characters to the font */
+  font-feature-settings: 'ss01', 'ss02', 'case', 'salt';
+}
+/* :root {
   --background: #ffffff;
   --foreground: #171717;
-}
+} */
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
@@ -18,4 +24,4 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
-}
+} */
