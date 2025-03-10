@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Card, Flex, Input, Label, Text } from '@aws-amplify/ui-react';
-import { translations } from '../i18n/translations';
-import { useLanguage } from '../hooks/useLanguage';
 
 interface AutocompleteProps<T> {
   items: T[];
@@ -24,8 +22,6 @@ export default function Autocomplete<T>({
   placeholder,
   label
 }: AutocompleteProps<T>) {
-  const { language } = useLanguage();
-  const t = translations[language];
   const [isOpen, setIsOpen] = useState(false);
   const [filteredItems, setFilteredItems] = useState<T[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);

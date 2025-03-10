@@ -18,10 +18,9 @@ import SolarPanelForm from './components/SolarPanelForm';
 import Modal from './components/Modal';
 import Autocomplete from './components/Autocomplete';
 import VoltageTable from './components/VoltageTable';
-import { Button, Card, Flex, Grid, Text, Input, Label } from '@aws-amplify/ui-react';
+import { Button, Card, Flex, Text, Input, Label } from '@aws-amplify/ui-react';
 import { translations } from './i18n/translations';
 import { useLanguage } from './hooks/useLanguage';
-// import { ManufacturerSelectField } from './components/ManufacturerSelectField';
 
 Amplify.configure(outputs);
 
