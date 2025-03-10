@@ -53,6 +53,7 @@ export default function ManufacturerForm({ manufacturer, mode, onSuccess }: Manu
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              data-1p-ignore
               required
             />
           </div>

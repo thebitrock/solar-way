@@ -71,12 +71,12 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap="1rem">
           <div>
-            <Label htmlFor="manufacturerId">Производитель</Label>
             <SelectField
               id="manufacturerId"
               label="Производитель"
               value={manufacturerId}
               onChange={(e) => setManufacturerId(e.target.value)}
+              data-1p-ignore
               required
             >
               <option value="">Выберите производителя</option>
@@ -94,6 +94,7 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              data-1p-ignore
               required
             />
           </div>
@@ -106,6 +107,7 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
               step="0.01"
               value={vocSTC}
               onChange={(e) => setVocSTC(e.target.value)}
+              data-1p-ignore
               required
             />
           </div>
@@ -120,6 +122,7 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
               step="0.01"
               value={temperatureCoefficientOfVOC}
               onChange={(e) => setTemperatureCoefficientOfVOC(e.target.value)}
+              data-1p-ignore
               required
             />
           </div>
