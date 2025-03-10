@@ -1,6 +1,8 @@
 'use client';
 
 import { Card, Table, TableHead, TableRow, TableCell, TableBody } from '@aws-amplify/ui-react';
+import { translations } from '../i18n/translations';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface VoltageTableProps {
   voltages: Array<{
@@ -10,13 +12,16 @@ interface VoltageTableProps {
 }
 
 export default function VoltageTable({ voltages }: VoltageTableProps) {
+  const { language } = useLanguage();
+  const t = translations[language];
+
   return (
     <Card>
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Температура (°C)</TableCell>
-            <TableCell>Напряжение холостого хода (V)</TableCell>
+            <TableCell>{t.calculation.temperature}</TableCell>
+            <TableCell>{t.calculation.openCircuitVoltage}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

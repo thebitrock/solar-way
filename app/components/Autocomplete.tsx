@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Input, Flex, Text } from '@aws-amplify/ui-react';
+import { Card, Flex, Input, Label, Text } from '@aws-amplify/ui-react';
+import { translations } from '../i18n/translations';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface AutocompleteProps<T> {
   items: T[];
@@ -20,34 +22,39 @@ export default function Autocomplete<T>({
   onSelect,
   getLabel,
   placeholder,
-  label,
+  label
 }: AutocompleteProps<T>) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [isOpen, setIsOpen] = useState(false);
   const [filteredItems, setFilteredItems] = useState<T[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const filtered = items.filter((item) =>
+    const filtered = items.filter(item =>
       getLabel(item).toLowerCase().includes(value.toLowerCase())
     );
     setFilteredItems(filtered);
-  }, [value, items, getLabel]);
+  }, [items, value, getLabel]);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    }
+    };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   return (
     <div ref={wrapperRef} className="relative">
-      {label && <Text className="mb-1">{label}</Text>}
+      {label && <Label>{label}</Label>}
       <Input
+        type="text"
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
@@ -57,20 +64,23 @@ export default function Autocomplete<T>({
         placeholder={placeholder}
       />
       {isOpen && filteredItems.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-          {filteredItems.map((item, index) => (
-            <div
-              key={index}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-              onClick={() => {
-                onSelect(item);
-                setIsOpen(false);
-              }}
-            >
-              {getLabel(item)}
-            </div>
-          ))}
-        </div>
+        <Card className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto">
+          <Flex direction="column">
+            {filteredItems.map((item, index) => (
+              <button
+                key={index}
+                className="px-4 py-2 text-left hover:bg-gray-100"
+                onClick={() => {
+                  onSelect(item);
+                  onChange(getLabel(item));
+                  setIsOpen(false);
+                }}
+              >
+                <Text>{getLabel(item)}</Text>
+              </button>
+            ))}
+          </Flex>
+        </Card>
       )}
     </div>
   );

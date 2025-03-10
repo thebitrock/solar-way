@@ -3,74 +3,70 @@
 import { useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '@/amplify/data/resource';
-import { Button, Card, Flex, Input, Label, Text } from '@aws-amplify/ui-react';
+import { Button, TextField, Flex } from '@aws-amplify/ui-react';
+import { translations } from '../i18n/translations';
+import { useLanguage } from '../hooks/useLanguage';
 
 const client = generateClient<Schema>();
 
 interface ManufacturerFormProps {
-  manufacturer?: Schema['Manufacturer']['type'];
   mode: 'create' | 'update';
-  onSuccess?: () => void;
+  manufacturer?: Schema['Manufacturer']['type'];
+  onSuccess: () => void;
 }
 
-export default function ManufacturerForm({ manufacturer, mode, onSuccess }: ManufacturerFormProps) {
+export default function ManufacturerForm({ mode, manufacturer, onSuccess }: ManufacturerFormProps) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [name, setName] = useState(manufacturer?.name || '');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+    setError('');
+
+    if (!name.trim()) {
+      setError(t.errors.required);
+      return;
+    }
 
     try {
       if (mode === 'create') {
         await client.models.Manufacturer.create({
-          name,
+          name: name.trim()
         });
-      } else if (manufacturer?.id) {
+      } else if (manufacturer) {
         await client.models.Manufacturer.update({
           id: manufacturer.id,
-          name,
+          name: name.trim()
         });
       }
-      setName('');
-      onSuccess?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Произошла ошибка');
-    } finally {
-      setIsLoading(false);
+      onSuccess();
+    } catch (error) {
+      console.error('Error saving manufacturer:', error);
+      setError('An error occurred while saving');
     }
   };
 
   return (
-    <Card>
-      <form onSubmit={handleSubmit}>
-        <Flex direction="column" gap="1rem">
-          <div>
-            <Label htmlFor="name">Название производителя</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              data-1p-ignore
-              required
-            />
-          </div>
-
-          {error && (
-            <Text color="red">{error}</Text>
-          )}
-
-          <Button
-            type="submit"
-            isLoading={isLoading}
-            loadingText={mode === 'create' ? 'Создание...' : 'Обновление...'}
-          >
-            {mode === 'create' ? 'Создать производителя' : 'Обновить производителя'}
+    <form onSubmit={handleSubmit}>
+      <Flex direction="column" gap="1rem">
+        <TextField
+          label={t.manufacturers.name}
+          placeholder={t.manufacturers.namePlaceholder}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          errorMessage={error}
+        />
+        <Flex gap="1rem" justifyContent="flex-end">
+          <Button type="submit">
+            {t.solarPanels.submit}
+          </Button>
+          <Button type="button" onClick={onSuccess}>
+            {t.solarPanels.cancel}
           </Button>
         </Flex>
-      </form>
-    </Card>
+      </Flex>
+    </form>
   );
 } 

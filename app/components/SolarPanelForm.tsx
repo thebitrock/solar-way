@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '@/amplify/data/resource';
 import { Button, Card, Flex, Input, Label, SelectField, Text } from '@aws-amplify/ui-react';
+import { translations } from '../i18n/translations';
+import { useLanguage } from '../hooks/useLanguage';
 
 const client = generateClient<Schema>();
 
@@ -14,6 +16,8 @@ interface SolarPanelFormProps {
 }
 
 export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPanelFormProps) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [name, setName] = useState(solarPanel?.name || '');
   const [vocSTC, setVocSTC] = useState(solarPanel?.vocSTC?.toString() || '');
   const [temperatureCoefficientOfVOC, setTemperatureCoefficientOfVOC] = useState(
@@ -37,21 +41,38 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
     setIsLoading(true);
     setError(null);
 
+    if (!name.trim()) {
+      setError(t.errors.required);
+      return;
+    }
+
+    const vocSTCValue = parseFloat(vocSTC);
+    if (isNaN(vocSTCValue)) {
+      setError(t.errors.invalidNumber);
+      return;
+    }
+
+    const tempCoeffValue = parseFloat(temperatureCoefficientOfVOC);
+    if (isNaN(tempCoeffValue)) {
+      setError(t.errors.invalidNumber);
+      return;
+    }
+
     try {
       if (mode === 'create') {
         await client.models.SolarPanel.create({
-          name,
-          vocSTC: parseFloat(vocSTC),
-          temperatureCoefficientOfVOC: parseFloat(temperatureCoefficientOfVOC),
-          manufacturerId,
+          name: name.trim(),
+          vocSTC: vocSTCValue,
+          temperatureCoefficientOfVOC: tempCoeffValue,
+          manufacturerId: manufacturerId || ''
         });
       } else if (solarPanel?.id) {
         await client.models.SolarPanel.update({
           id: solarPanel.id,
-          name,
-          vocSTC: parseFloat(vocSTC),
-          temperatureCoefficientOfVOC: parseFloat(temperatureCoefficientOfVOC),
-          manufacturerId,
+          name: name.trim(),
+          vocSTC: vocSTCValue,
+          temperatureCoefficientOfVOC: tempCoeffValue,
+          manufacturerId: manufacturerId || ''
         });
       }
       setName('');
@@ -73,13 +94,13 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
           <div>
             <SelectField
               id="manufacturerId"
-              label="Производитель"
+              label={t.solarPanels.manufacturer}
               value={manufacturerId}
               onChange={(e) => setManufacturerId(e.target.value)}
               data-1p-ignore
               required
             >
-              <option value="">Выберите производителя</option>
+              <option value="">{t.solarPanels.chooseManufacturer}</option>
               {manufacturers.map((manufacturer) => (
                 <option key={manufacturer.id} value={manufacturer.id}>
                   {manufacturer.name}
@@ -89,7 +110,7 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
           </div>
 
           <div>
-            <Label htmlFor="name">Название модели</Label>
+            <Label htmlFor="name">{t.solarPanels.name}</Label>
             <Input
               id="name"
               value={name}
@@ -100,7 +121,7 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
           </div>
 
           <div>
-            <Label htmlFor="vocSTC">Voc STC (V)</Label>
+            <Label htmlFor="vocSTC">{t.solarPanels.vocSTC}</Label>
             <Input
               id="vocSTC"
               type="number"
@@ -113,9 +134,7 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
           </div>
 
           <div>
-            <Label htmlFor="temperatureCoefficientOfVOC">
-              Температурный коэффициент Voc (%/°C)
-            </Label>
+            <Label htmlFor="temperatureCoefficientOfVOC">{t.solarPanels.temperatureCoefficient}</Label>
             <Input
               id="temperatureCoefficientOfVOC"
               type="number"
@@ -131,13 +150,18 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
             <Text color="red">{error}</Text>
           )}
 
-          <Button
-            type="submit"
-            isLoading={isLoading}
-            loadingText={mode === 'create' ? 'Создание...' : 'Обновление...'}
-          >
-            {mode === 'create' ? 'Создать солнечную панель' : 'Обновить солнечную панель'}
-          </Button>
+          <Flex gap="1rem" justifyContent="flex-end">
+            <Button
+              type="submit"
+              isLoading={isLoading}
+              loadingText={mode === 'create' ? t.solarPanels.creating : t.solarPanels.updating}
+            >
+              {mode === 'create' ? t.solarPanels.create : t.solarPanels.update}
+            </Button>
+            <Button type="button" onClick={onSuccess}>
+              {t.solarPanels.cancel}
+            </Button>
+          </Flex>
         </Flex>
       </form>
     </Card>

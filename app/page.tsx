@@ -19,6 +19,8 @@ import Modal from './components/Modal';
 import Autocomplete from './components/Autocomplete';
 import VoltageTable from './components/VoltageTable';
 import { Button, Card, Flex, Grid, Text, Input, Label } from '@aws-amplify/ui-react';
+import { translations } from './i18n/translations';
+import { useLanguage } from './hooks/useLanguage';
 // import { ManufacturerSelectField } from './components/ManufacturerSelectField';
 
 Amplify.configure(outputs);
@@ -26,6 +28,8 @@ Amplify.configure(outputs);
 const client = generateClient<Schema>();
 
 export default function Home() {
+  const { language, toggleLanguage } = useLanguage();
+  const t = translations[language];
   const [activeTab, setActiveTab] = useState<'calculation' | 'manufacturers' | 'solarPanels'>('calculation');
   const [selectedManufacturer, setSelectedManufacturer] = useState<Schema['Manufacturer']['type'] | null>(null);
   const [selectedSolarPanel, setSelectedSolarPanel] = useState<Schema['SolarPanel']['type'] | null>(null);
@@ -99,7 +103,12 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Калькулятор солнечных панелей</h1>
+        <Flex justifyContent="space-between" alignItems="center" className="mb-8">
+          <h1 className="text-3xl font-bold">{t.title}</h1>
+          <Button onClick={toggleLanguage} variation="link">
+            {language === 'uk' ? '🇬🇧 EN' : '🇺🇦 UK'}
+          </Button>
+        </Flex>
         
         {/* Табы для переключения между разделами */}
         <div className="flex space-x-4 mb-6">
@@ -111,7 +120,7 @@ export default function Home() {
             }`}
             onClick={() => setActiveTab('calculation')}
           >
-            Калькуляция напряжения
+            {t.tabs.calculation}
           </button>
           <button
             className={`px-4 py-2 rounded ${
@@ -121,7 +130,7 @@ export default function Home() {
             }`}
             onClick={() => setActiveTab('manufacturers')}
           >
-            Производители
+            {t.tabs.manufacturers}
           </button>
           <button
             className={`px-4 py-2 rounded ${
@@ -131,7 +140,7 @@ export default function Home() {
             }`}
             onClick={() => setActiveTab('solarPanels')}
           >
-            Солнечные панели
+            {t.tabs.solarPanels}
           </button>
         </div>
 
@@ -147,12 +156,12 @@ export default function Home() {
                   onChange={setSearchValue}
                   onSelect={setSelectedSolarPanel}
                   getLabel={getSolarPanelLabel}
-                  placeholder="Поиск солнечной панели..."
-                  label="Выберите солнечную панель"
+                  placeholder={t.calculation.selectPanel}
+                  label={t.calculation.selectPanel}
                 />
 
                 <div>
-                  <Label htmlFor="panelCount">Количество панелей в стринге</Label>
+                  <Label htmlFor="panelCount">{t.calculation.panelCount}</Label>
                   <Input
                     id="panelCount"
                     type="number"
@@ -164,7 +173,7 @@ export default function Home() {
                 </div>
 
                 <Button onClick={() => setIsModalOpen(true)}>
-                  Добавить солнечную панель
+                  {t.calculation.addPanel}
                 </Button>
               </Flex>
             </Card>
@@ -173,27 +182,27 @@ export default function Home() {
             {selectedSolarPanel && (
               <Card className="mb-8">
                 <Flex direction="column" gap="1rem">
-                  <h2 className="text-xl font-bold">Параметры выбранной панели</h2>
+                  <h2 className="text-xl font-bold">{t.calculation.panelInfo}</h2>
                   <div>
-                    <Text fontWeight="bold">Название:</Text>
+                    <Text fontWeight="bold">{t.calculation.name}</Text>
                     <Text>{selectedSolarPanel.name}</Text>
                   </div>
                   <div>
-                    <Text fontWeight="bold">Производитель:</Text>
+                    <Text fontWeight="bold">{t.calculation.manufacturer}</Text>
                     <Text>
                       {manufacturers.find(m => m.id === selectedSolarPanel.manufacturerId)?.name}
                     </Text>
                   </div>
                   <div>
-                    <Text fontWeight="bold">Voc STC:</Text>
+                    <Text fontWeight="bold">{t.calculation.vocSTC}</Text>
                     <Text>{selectedSolarPanel.vocSTC}V</Text>
                   </div>
                   <div>
-                    <Text fontWeight="bold">Температурный коэффициент Voc:</Text>
+                    <Text fontWeight="bold">{t.calculation.temperatureCoefficient}</Text>
                     <Text>{selectedSolarPanel.temperatureCoefficientOfVOC}%/°C</Text>
                   </div>
                   <div>
-                    <Text fontWeight="bold">Общее напряжение при STC:</Text>
+                    <Text fontWeight="bold">{t.calculation.totalVoltage}</Text>
                     <Text>{selectedSolarPanel.vocSTC * panelCount}V</Text>
                   </div>
                 </Flex>
@@ -211,12 +220,12 @@ export default function Home() {
           <Card>
             <Flex direction="column" gap="1rem">
               <Flex justifyContent="space-between" alignItems="center">
-                <h2 className="text-xl font-bold">Список производителей</h2>
+                <h2 className="text-xl font-bold">{t.manufacturers.list}</h2>
                 <Button onClick={() => {
                   setIsAddingManufacturer(true);
                   setIsModalOpen(true);
                 }}>
-                  Добавить производителя
+                  {t.manufacturers.add}
                 </Button>
               </Flex>
               <Flex direction="column" gap="1rem">
@@ -230,13 +239,13 @@ export default function Home() {
                           setIsModalOpen(true);
                         }}
                       >
-                        Редактировать
+                        {t.manufacturers.edit}
                       </Button>
                       <Button
                         onClick={() => handleDeleteManufacturer(manufacturer.id)}
                         variation="destructive"
                       >
-                        Удалить
+                        {t.manufacturers.delete}
                       </Button>
                     </Flex>
                   </Flex>
@@ -250,9 +259,9 @@ export default function Home() {
           <Card>
             <Flex direction="column" gap="1rem">
               <Flex justifyContent="space-between" alignItems="center">
-                <h2 className="text-xl font-bold">Список солнечных панелей</h2>
+                <h2 className="text-xl font-bold">{t.solarPanels.list}</h2>
                 <Button onClick={() => setIsModalOpen(true)}>
-                  Добавить солнечную панель
+                  {t.solarPanels.add}
                 </Button>
               </Flex>
               <Flex direction="column" gap="1rem">
@@ -271,13 +280,13 @@ export default function Home() {
                           setIsModalOpen(true);
                         }}
                       >
-                        Редактировать
+                        {t.solarPanels.edit}
                       </Button>
                       <Button
                         onClick={() => handleDeleteSolarPanel(panel.id)}
                         variation="destructive"
                       >
-                        Удалить
+                        {t.solarPanels.delete}
                       </Button>
                     </Flex>
                   </Flex>
@@ -297,13 +306,9 @@ export default function Home() {
             setSelectedSolarPanel(null);
           }}
           title={
-            isAddingManufacturer
-              ? 'Добавить производителя'
-              : selectedManufacturer
-              ? 'Редактировать производителя'
-              : selectedSolarPanel
-              ? 'Редактировать солнечную панель'
-              : 'Добавить солнечную панель'
+              selectedSolarPanel
+              ? t.modal.editSolarPanel
+              : t.modal.addSolarPanel
           }
         >
           {isAddingManufacturer || selectedManufacturer ? (
@@ -318,18 +323,6 @@ export default function Home() {
             />
           ) : (
             <Flex direction="column" gap="1rem">
-              <Autocomplete
-                items={manufacturers}
-                value=""
-                onChange={() => {}}
-                onSelect={() => {}}
-                getLabel={(m) => m.name}
-                placeholder="Поиск производителя..."
-                label="Выберите производителя"
-              />
-              <Button onClick={() => setIsAddingManufacturer(true)}>
-                Добавить нового производителя
-              </Button>
               <SolarPanelForm
                 mode={selectedSolarPanel ? 'update' : 'create'}
                 solarPanel={selectedSolarPanel || undefined}
