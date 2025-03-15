@@ -200,6 +200,7 @@ export default function Home() {
           </Button>
         </Flex>
         
+        <br/>
         {/* Табы для переключения между разделами */}
         <div className="flex space-x-4 mb-6">
           <button

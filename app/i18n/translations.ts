@@ -1,6 +1,6 @@
 export const translations = {
   uk: {
-    title: 'Калькулятор сонячних панелей',
+    title: 'Калькулятор стрінга сонячних панелей',
     tabs: {
       calculation: 'Розрахунок напруги',
       manufacturers: 'Виробники',
@@ -87,11 +87,11 @@ export const translations = {
     }
   },
   en: {
-    title: 'Solar Panel Calculator',
+    title: 'Solar string calculator',
     tabs: {
-      calculation: 'Voltage Calculation',
+      calculation: 'Voltage calculation',
       manufacturers: 'Manufacturers',
-      solarPanels: 'Solar Panels'
+      solarPanels: 'Solar panels'
     },
     calculation: {
       selectPanel: 'Select solar panel',
