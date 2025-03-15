@@ -18,7 +18,7 @@ import SolarPanelForm from './components/SolarPanelForm';
 import Modal from './components/Modal';
 import Autocomplete from './components/Autocomplete';
 import VoltageTable from './components/VoltageTable';
-import { Button, Card, Flex, Text, SliderField, Grid, StepperField } from '@aws-amplify/ui-react';
+import { Button, Card, Flex, Text, SliderField, Grid } from '@aws-amplify/ui-react';
 import { translations } from './i18n/translations';
 import { useLanguage } from './hooks/useLanguage';
 
@@ -38,6 +38,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddingManufacturer, setIsAddingManufacturer] = useState(false);
   const [panelCount, setPanelCount] = useState<number>(1);
+  const [isPanelInfoOpen, setIsPanelInfoOpen] = useState<boolean>(true);
   const [calculatedVoltages, setCalculatedVoltages] = useState<Array<{ 
     temperature: number; 
     voltage: number;
@@ -52,6 +53,7 @@ export default function Home() {
     const savedMinTemp = localStorage.getItem('minTemp');
     const savedMaxTemp = localStorage.getItem('maxTemp');
     const savedPanelCount = localStorage.getItem('panelCount');
+    const savedPanelInfoOpen = localStorage.getItem('panelInfoOpen');
     
     if (savedMinTemp) {
       setMinTemp(Number(savedMinTemp));
@@ -61,6 +63,9 @@ export default function Home() {
     }
     if (savedPanelCount) {
       setPanelCount(Number(savedPanelCount));
+    }
+    if (savedPanelInfoOpen !== null) {
+      setIsPanelInfoOpen(savedPanelInfoOpen === 'true');
     }
   }, []);
 
@@ -83,6 +88,13 @@ export default function Home() {
       localStorage.setItem('panelCount', panelCount.toString());
     }
   }, [panelCount]);
+
+  // Сохранение состояния спойлера в localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('panelInfoOpen', isPanelInfoOpen.toString());
+    }
+  }, [isPanelInfoOpen]);
 
   // Загрузка данных
   useEffect(() => {
@@ -248,51 +260,63 @@ export default function Home() {
             {selectedSolarPanel && (
               <Card className="mb-8">
                 <Flex direction="column" gap="1rem">
-                  <h2 className="text-xl font-bold">{t.calculation.panelInfo}</h2>
-                  <Grid
-                    columnGap="1rem"
-                    rowGap="1rem"
-                    templateColumns="1fr 1fr"
+                  <Button
+                    onClick={() => setIsPanelInfoOpen(!isPanelInfoOpen)}
+                    variation="link"
+                    className="text-left"
                   >
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.name}</Text>
-                      <Text>{selectedSolarPanel.name}</Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.manufacturer}</Text>
-                      <Text>
-                        {manufacturers.find(m => m.id === selectedSolarPanel.manufacturerId)?.name}
-                      </Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.vocSTC}</Text>
-                      <Text>{selectedSolarPanel.vocSTC}V</Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.temperatureCoefficient}</Text>
-                      <Text>{selectedSolarPanel.temperatureCoefficientOfVOC}%/°C</Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.temperatureCoefficientISC}</Text>
-                      <Text>{selectedSolarPanel.temperatureCoefficientOfISC ?? t.calculation.insufficientData}%/°C</Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.temperatureCoefficientPmax}</Text>
-                      <Text>{selectedSolarPanel.temperatureCoefficientOfPmax ?? t.calculation.insufficientData}%/°C</Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.impSTC}</Text>
-                      <Text>{selectedSolarPanel.impSTC ?? t.calculation.insufficientData}A</Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.vmpSTC}</Text>
-                      <Text>{selectedSolarPanel.vmpSTC ?? t.calculation.insufficientData}V</Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.iscSTC}</Text>
-                      <Text>{selectedSolarPanel.iscSTC}A</Text>
-                    </div>
-                  </Grid>
+                    <Flex alignItems="center" gap="0.5rem">
+                      <Text className="text-xl font-bold">{t.calculation.panelInfo}</Text>
+                      <Text fontSize="large">{isPanelInfoOpen ? '▼' : '▶'}</Text>
+                    </Flex>
+                  </Button>
+                  
+                  {isPanelInfoOpen && (
+                    <Grid
+                      columnGap="1rem"
+                      rowGap="1rem"
+                      templateColumns="1fr 1fr"
+                    >
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.name}</Text>
+                        <Text>{selectedSolarPanel.name}</Text>
+                      </div>
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.manufacturer}</Text>
+                        <Text>
+                          {manufacturers.find(m => m.id === selectedSolarPanel.manufacturerId)?.name}
+                        </Text>
+                      </div>
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.vocSTC}</Text>
+                        <Text>{selectedSolarPanel.vocSTC}V</Text>
+                      </div>
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.temperatureCoefficient}</Text>
+                        <Text>{selectedSolarPanel.temperatureCoefficientOfVOC}%/°C</Text>
+                      </div>
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.temperatureCoefficientISC}</Text>
+                        <Text>{selectedSolarPanel.temperatureCoefficientOfISC ?? t.calculation.insufficientData}%/°C</Text>
+                      </div>
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.temperatureCoefficientPmax}</Text>
+                        <Text>{selectedSolarPanel.temperatureCoefficientOfPmax ?? t.calculation.insufficientData}%/°C</Text>
+                      </div>
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.impSTC}</Text>
+                        <Text>{selectedSolarPanel.impSTC ?? t.calculation.insufficientData}A</Text>
+                      </div>
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.vmpSTC}</Text>
+                        <Text>{selectedSolarPanel.vmpSTC ?? t.calculation.insufficientData}V</Text>
+                      </div>
+                      <div>
+                        <Text fontWeight="bold">{t.calculation.iscSTC}</Text>
+                        <Text>{selectedSolarPanel.iscSTC}A</Text>
+                      </div>
+                    </Grid>
+                  )}
                 </Flex>
               </Card>
             )}
