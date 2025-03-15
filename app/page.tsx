@@ -321,7 +321,8 @@ export default function Home() {
               </Card>
             )}
 
-            <div>
+<Card className="my-4">
+              <Flex direction="column" gap="1rem">
               <SliderField
                 label={t.calculation.panelCount}
                 min={1}
@@ -330,6 +331,7 @@ export default function Home() {
                 value={panelCount}
                 onChange={(value) => setPanelCount(value)}
               />
+                          </Flex>
               {selectedSolarPanel && (
                 <Flex direction="column" gap="0.5rem" className="mt-2">
                   <Text fontWeight="bold">
@@ -342,7 +344,9 @@ export default function Home() {
                   </Text>
                 </Flex>
               )}
-            </div>
+            
+
+            </Card>
 
             {/* Управление диапазоном температур */}
             <Card className="my-4">
