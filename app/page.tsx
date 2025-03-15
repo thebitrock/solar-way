@@ -93,12 +93,12 @@ export default function Home() {
 
       // Формула для тока: Isc(T) = Isc(STC) * (1 + β * (T - 25))
       // где β - температурный коэффициент Isc в %/°C
-      const current = iscSTC * (1 + (temperatureCoefficientOfISC / 100) * (temp - 25));
+      const current = (iscSTC ?? 0) * (1 + ((temperatureCoefficientOfISC ?? 0) / 100) * (temp - 25));
 
       // Формула для мощности: P(T) = Pmax(STC) * (1 + γ * (T - 25))
       // где γ - температурный коэффициент Pmax в %/°C
-      const stcPower = vmpSTC * impSTC; // Мощность при STC
-      const power = stcPower * (1 + (temperatureCoefficientOfPmax / 100) * (temp - 25));
+      const stcPower = (vmpSTC ?? 0) * (impSTC ?? 0); // Мощность при STC
+      const power = stcPower * (1 + ((temperatureCoefficientOfPmax ?? 0) / 100) * (temp - 25));
 
       results.push({
         temperature: temp,
@@ -235,27 +235,23 @@ export default function Home() {
                     </div>
                     <div>
                       <Text fontWeight="bold">{t.calculation.temperatureCoefficientISC}</Text>
-                      <Text>{selectedSolarPanel.temperatureCoefficientOfISC}%/°C</Text>
+                      <Text>{selectedSolarPanel.temperatureCoefficientOfISC ?? t.calculation.insufficientData}%/°C</Text>
                     </div>
                     <div>
                       <Text fontWeight="bold">{t.calculation.temperatureCoefficientPmax}</Text>
-                      <Text>{selectedSolarPanel.temperatureCoefficientOfPmax}%/°C</Text>
+                      <Text>{selectedSolarPanel.temperatureCoefficientOfPmax ?? t.calculation.insufficientData}%/°C</Text>
                     </div>
                     <div>
                       <Text fontWeight="bold">{t.calculation.impSTC}</Text>
-                      <Text>{selectedSolarPanel.impSTC}A</Text>
+                      <Text>{selectedSolarPanel.impSTC ?? t.calculation.insufficientData}A</Text>
                     </div>
                     <div>
                       <Text fontWeight="bold">{t.calculation.vmpSTC}</Text>
-                      <Text>{selectedSolarPanel.vmpSTC}V</Text>
+                      <Text>{selectedSolarPanel.vmpSTC ?? t.calculation.insufficientData}V</Text>
                     </div>
                     <div>
                       <Text fontWeight="bold">{t.calculation.iscSTC}</Text>
                       <Text>{selectedSolarPanel.iscSTC}A</Text>
-                    </div>
-                    <div>
-                      <Text fontWeight="bold">{t.calculation.totalVoltage}</Text>
-                      <Text>{selectedSolarPanel.vocSTC * panelCount}V</Text>
                     </div>
                   </Grid>
                 </Flex>
@@ -272,9 +268,16 @@ export default function Home() {
                 onChange={(value) => setPanelCount(value)}
               />
               {selectedSolarPanel && (
-                <Text className="mt-2">
-                  {t.calculation.totalPowerSTC}: {(selectedSolarPanel.vmpSTC * selectedSolarPanel.impSTC * panelCount).toFixed(2)}W
-                </Text>
+                <Flex direction="column" gap="0.5rem" className="mt-2">
+                  <Text fontWeight="bold">
+                    {t.calculation.totalVoltage} {selectedSolarPanel.vocSTC * panelCount}V
+                  </Text>
+                  <Text fontWeight="bold">
+                    {t.calculation.totalPowerSTC}: {selectedSolarPanel.vmpSTC && selectedSolarPanel.impSTC
+                      ? `${(selectedSolarPanel.vmpSTC * selectedSolarPanel.impSTC * panelCount).toFixed(2)}W`
+                      : t.calculation.insufficientData}
+                  </Text>
+                </Flex>
               )}
             </div>
 
