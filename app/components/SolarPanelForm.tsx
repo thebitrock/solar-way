@@ -103,12 +103,12 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
           name: name.trim(),
           vocSTC: vocSTCValue,
           temperatureCoefficientOfVOC: tempCoeffVOCValue,
-          temperatureCoefficientOfISC: tempCoeffISCValue ?? 0,
-          temperatureCoefficientOfPmax: tempCoeffPmaxValue ?? 0,
-          impSTC: impSTCValue ?? 0,
-          vmpSTC: vmpSTCValue ?? 0,
-          iscSTC: iscSTCValue ?? 0,
-          manufacturerId: manufacturerId || ''
+          manufacturerId: manufacturerId || '',
+          ...(tempCoeffISCValue !== undefined && { temperatureCoefficientOfISC: tempCoeffISCValue }),
+          ...(tempCoeffPmaxValue !== undefined && { temperatureCoefficientOfPmax: tempCoeffPmaxValue }),
+          ...(impSTCValue !== undefined && { impSTC: impSTCValue }),
+          ...(vmpSTCValue !== undefined && { vmpSTC: vmpSTCValue }),
+          ...(iscSTCValue !== undefined && { iscSTC: iscSTCValue })
         });
       } else if (solarPanel?.id) {
         await client.models.SolarPanel.update({
@@ -116,12 +116,12 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
           name: name.trim(),
           vocSTC: vocSTCValue,
           temperatureCoefficientOfVOC: tempCoeffVOCValue,
-          temperatureCoefficientOfISC: tempCoeffISCValue ?? 0,
-          temperatureCoefficientOfPmax: tempCoeffPmaxValue ?? 0,
-          impSTC: impSTCValue ?? 0,
-          vmpSTC: vmpSTCValue ?? 0,
-          iscSTC: iscSTCValue ?? 0,
-          manufacturerId: manufacturerId || ''
+          manufacturerId: manufacturerId || '',
+          ...(tempCoeffISCValue !== undefined && { temperatureCoefficientOfISC: tempCoeffISCValue }),
+          ...(tempCoeffPmaxValue !== undefined && { temperatureCoefficientOfPmax: tempCoeffPmaxValue }),
+          ...(impSTCValue !== undefined && { impSTC: impSTCValue }),
+          ...(vmpSTCValue !== undefined && { vmpSTC: vmpSTCValue }),
+          ...(iscSTCValue !== undefined && { iscSTC: iscSTCValue })
         });
       }
       setName('');
