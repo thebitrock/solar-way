@@ -19,7 +19,12 @@ const schema = a.schema({
       manufacturerId: a.id().required(),
       name: a.string().required(),
       vocSTC: a.float().required(),
-      temperatureCoefficientOfVOC: a.float().required(),
+      temperatureCoefficientOfVOC: a.float().required().default(0),
+      temperatureCoefficientOfISC: a.float().required().default(0),
+      temperatureCoefficientOfPmax: a.float().required().default(0),
+      impSTC: a.float().required(),
+      vmpSTC: a.float().required(),
+      iscSTC: a.float().required(),
     })
     .authorization((allow) => [allow.guest()]),
 });

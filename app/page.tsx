@@ -18,7 +18,7 @@ import SolarPanelForm from './components/SolarPanelForm';
 import Modal from './components/Modal';
 import Autocomplete from './components/Autocomplete';
 import VoltageTable from './components/VoltageTable';
-import { Button, Card, Flex, Text, Input, Label } from '@aws-amplify/ui-react';
+import { Button, Card, Flex, Text, Input, Label, SliderField, Grid } from '@aws-amplify/ui-react';
 import { translations } from './i18n/translations';
 import { useLanguage } from './hooks/useLanguage';
 
@@ -38,7 +38,12 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddingManufacturer, setIsAddingManufacturer] = useState(false);
   const [panelCount, setPanelCount] = useState<number>(1);
-  const [calculatedVoltages, setCalculatedVoltages] = useState<Array<{ temperature: number; voltage: number }>>([]);
+  const [calculatedVoltages, setCalculatedVoltages] = useState<Array<{ 
+    temperature: number; 
+    voltage: number;
+    current: number;
+    power: number;
+  }>>([]);
 
   // Загрузка данных
   useEffect(() => {
@@ -47,7 +52,16 @@ export default function Home() {
     });
 
     const solarPanelSubscription = client.models.SolarPanel.observeQuery().subscribe({
-      next: ({ items }) => setSolarPanels(items),
+      next: ({ items }) => setSolarPanels(items
+        .filter((panel): panel is NonNullable<typeof panel> => panel !== null)
+        .map(panel => ({
+          ...panel,
+          temperatureCoefficientOfISC: panel.temperatureCoefficientOfISC ?? 0,
+          temperatureCoefficientOfPmax: panel.temperatureCoefficientOfPmax ?? 0,
+          impSTC: panel.impSTC ?? 0,
+          vmpSTC: panel.vmpSTC ?? 0,
+          iscSTC: panel.iscSTC ?? 0
+        }))),
     });
 
     return () => {
@@ -60,22 +74,41 @@ export default function Home() {
   useEffect(() => {
     if (!selectedSolarPanel) return;
 
-    const voltages = [];
-    const { vocSTC, temperatureCoefficientOfVOC } = selectedSolarPanel;
+    const results = [];
+    const { 
+      vocSTC, 
+      temperatureCoefficientOfVOC, 
+      iscSTC, 
+      temperatureCoefficientOfISC,
+      vmpSTC,
+      impSTC,
+      temperatureCoefficientOfPmax 
+    } = selectedSolarPanel;
     
     // Расчет для температур от -30 до +25
     for (let temp = -30; temp <= 25; temp++) {
-      // Формула: Voc(T) = Voc(STC) * (1 + α * (T - 25))
+      // Формула для напряжения: Voc(T) = Voc(STC) * (1 + α * (T - 25))
       // где α - температурный коэффициент в %/°C
       const voltage = vocSTC * (1 + (temperatureCoefficientOfVOC / 100) * (temp - 25));
-      // Умножаем на количество панелей, так как они соединены последовательно
-      voltages.push({
+
+      // Формула для тока: Isc(T) = Isc(STC) * (1 + β * (T - 25))
+      // где β - температурный коэффициент Isc в %/°C
+      const current = iscSTC * (1 + (temperatureCoefficientOfISC / 100) * (temp - 25));
+
+      // Формула для мощности: P(T) = Pmax(STC) * (1 + γ * (T - 25))
+      // где γ - температурный коэффициент Pmax в %/°C
+      const stcPower = vmpSTC * impSTC; // Мощность при STC
+      const power = stcPower * (1 + (temperatureCoefficientOfPmax / 100) * (temp - 25));
+
+      results.push({
         temperature: temp,
-        voltage: voltage * panelCount
+        voltage: voltage * panelCount, // Умножаем на количество панелей, так как они соединены последовательно
+        current: current, // Ток не умножаем, так как панели соединены последовательно
+        power: power * panelCount // Умножаем на количество панелей для получения общей мощности
       });
     }
 
-    setCalculatedVoltages(voltages);
+    setCalculatedVoltages(results);
   }, [selectedSolarPanel, panelCount]);
 
   const handleDeleteManufacturer = async (id: string) => {
@@ -95,6 +128,13 @@ export default function Home() {
   };
 
   const getSolarPanelLabel = (panel: Schema['SolarPanel']['type']) => {
+    const defaultLabel = 'Неизвестная панель'
+    
+    if (!panel) {
+      return defaultLabel
+    }
+
+    console.log(panel)
     const manufacturer = manufacturers.find(m => m.id === panel.manufacturerId);
     return `${panel.name} (${manufacturer?.name || 'Неизвестный производитель'}) - Voc STC: ${panel.vocSTC}V`;
   };
@@ -105,7 +145,7 @@ export default function Home() {
         <Flex justifyContent="space-between" alignItems="center" className="mb-8">
           <h1 className="text-3xl font-bold">{t.title}</h1>
           <Button onClick={toggleLanguage} variation="link">
-            {language === 'uk' ? '🇬🇧 EN' : '🇺🇦 UK'}
+            {language === 'uk' ? '🇬🇧 EN' : '🇺🇦 UA'}
           </Button>
         </Flex>
         
@@ -159,18 +199,6 @@ export default function Home() {
                   label={t.calculation.selectPanel}
                 />
 
-                <div>
-                  <Label htmlFor="panelCount">{t.calculation.panelCount}</Label>
-                  <Input
-                    id="panelCount"
-                    type="number"
-                    min="1"
-                    value={panelCount.toString()}
-                    onChange={(e) => setPanelCount(Math.max(1, parseInt(e.target.value) || 1))}
-                    required
-                  />
-                </div>
-
                 <Button onClick={() => setIsModalOpen(true)}>
                   {t.calculation.addPanel}
                 </Button>
@@ -182,31 +210,73 @@ export default function Home() {
               <Card className="mb-8">
                 <Flex direction="column" gap="1rem">
                   <h2 className="text-xl font-bold">{t.calculation.panelInfo}</h2>
-                  <div>
-                    <Text fontWeight="bold">{t.calculation.name}</Text>
-                    <Text>{selectedSolarPanel.name}</Text>
-                  </div>
-                  <div>
-                    <Text fontWeight="bold">{t.calculation.manufacturer}</Text>
-                    <Text>
-                      {manufacturers.find(m => m.id === selectedSolarPanel.manufacturerId)?.name}
-                    </Text>
-                  </div>
-                  <div>
-                    <Text fontWeight="bold">{t.calculation.vocSTC}</Text>
-                    <Text>{selectedSolarPanel.vocSTC}V</Text>
-                  </div>
-                  <div>
-                    <Text fontWeight="bold">{t.calculation.temperatureCoefficient}</Text>
-                    <Text>{selectedSolarPanel.temperatureCoefficientOfVOC}%/°C</Text>
-                  </div>
-                  <div>
-                    <Text fontWeight="bold">{t.calculation.totalVoltage}</Text>
-                    <Text>{selectedSolarPanel.vocSTC * panelCount}V</Text>
-                  </div>
+                  <Grid
+                    columnGap="1rem"
+                    rowGap="1rem"
+                    templateColumns="1fr 1fr"
+                  >
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.name}</Text>
+                      <Text>{selectedSolarPanel.name}</Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.manufacturer}</Text>
+                      <Text>
+                        {manufacturers.find(m => m.id === selectedSolarPanel.manufacturerId)?.name}
+                      </Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.vocSTC}</Text>
+                      <Text>{selectedSolarPanel.vocSTC}V</Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.temperatureCoefficient}</Text>
+                      <Text>{selectedSolarPanel.temperatureCoefficientOfVOC}%/°C</Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.temperatureCoefficientISC}</Text>
+                      <Text>{selectedSolarPanel.temperatureCoefficientOfISC}%/°C</Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.temperatureCoefficientPmax}</Text>
+                      <Text>{selectedSolarPanel.temperatureCoefficientOfPmax}%/°C</Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.impSTC}</Text>
+                      <Text>{selectedSolarPanel.impSTC}A</Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.vmpSTC}</Text>
+                      <Text>{selectedSolarPanel.vmpSTC}V</Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.iscSTC}</Text>
+                      <Text>{selectedSolarPanel.iscSTC}A</Text>
+                    </div>
+                    <div>
+                      <Text fontWeight="bold">{t.calculation.totalVoltage}</Text>
+                      <Text>{selectedSolarPanel.vocSTC * panelCount}V</Text>
+                    </div>
+                  </Grid>
                 </Flex>
               </Card>
             )}
+
+            <div>
+              <SliderField
+                label={t.calculation.panelCount}
+                min={1}
+                max={30}
+                step={1}
+                value={panelCount}
+                onChange={(value) => setPanelCount(value)}
+              />
+              {selectedSolarPanel && (
+                <Text className="mt-2">
+                  {t.calculation.totalPowerSTC}: {(selectedSolarPanel.vmpSTC * selectedSolarPanel.impSTC * panelCount).toFixed(2)}W
+                </Text>
+              )}
+            </div>
 
             {/* Таблица с расчетами */}
             {calculatedVoltages.length > 0 && (
@@ -264,7 +334,7 @@ export default function Home() {
                 </Button>
               </Flex>
               <Flex direction="column" gap="1rem">
-                {solarPanels.map((panel) => (
+                {solarPanels.filter(panel => panel !== null).map((panel) => (
                   <Flex key={panel.id} justifyContent="space-between" alignItems="center">
                     <div>
                       <Text>{panel.name}</Text>

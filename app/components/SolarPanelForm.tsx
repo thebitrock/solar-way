@@ -23,6 +23,15 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
   const [temperatureCoefficientOfVOC, setTemperatureCoefficientOfVOC] = useState(
     solarPanel?.temperatureCoefficientOfVOC?.toString() || ''
   );
+  const [temperatureCoefficientOfISC, setTemperatureCoefficientOfISC] = useState(
+    solarPanel?.temperatureCoefficientOfISC?.toString() || ''
+  );
+  const [temperatureCoefficientOfPmax, setTemperatureCoefficientOfPmax] = useState(
+    solarPanel?.temperatureCoefficientOfPmax?.toString() || ''
+  );
+  const [impSTC, setImpSTC] = useState(solarPanel?.impSTC?.toString() || '');
+  const [vmpSTC, setVmpSTC] = useState(solarPanel?.vmpSTC?.toString() || '');
+  const [iscSTC, setIscSTC] = useState(solarPanel?.iscSTC?.toString() || '');
   const [manufacturerId, setManufacturerId] = useState(solarPanel?.manufacturerId || '');
   const [manufacturers, setManufacturers] = useState<Array<Schema['Manufacturer']['type']>>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,8 +61,38 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
       return;
     }
 
-    const tempCoeffValue = parseFloat(temperatureCoefficientOfVOC);
-    if (isNaN(tempCoeffValue)) {
+    const tempCoeffVOCValue = parseFloat(temperatureCoefficientOfVOC);
+    if (isNaN(tempCoeffVOCValue)) {
+      setError(t.errors.invalidNumber);
+      return;
+    }
+
+    const tempCoeffISCValue = temperatureCoefficientOfISC ? parseFloat(temperatureCoefficientOfISC) : undefined;
+    if (temperatureCoefficientOfISC && isNaN(tempCoeffISCValue!)) {
+      setError(t.errors.invalidNumber);
+      return;
+    }
+
+    const tempCoeffPmaxValue = temperatureCoefficientOfPmax ? parseFloat(temperatureCoefficientOfPmax) : undefined;
+    if (temperatureCoefficientOfPmax && isNaN(tempCoeffPmaxValue!)) {
+      setError(t.errors.invalidNumber);
+      return;
+    }
+
+    const impSTCValue = impSTC ? parseFloat(impSTC) : undefined;
+    if (impSTC && isNaN(impSTCValue!)) {
+      setError(t.errors.invalidNumber);
+      return;
+    }
+
+    const vmpSTCValue = vmpSTC ? parseFloat(vmpSTC) : undefined;
+    if (vmpSTC && isNaN(vmpSTCValue!)) {
+      setError(t.errors.invalidNumber);
+      return;
+    }
+
+    const iscSTCValue = iscSTC ? parseFloat(iscSTC) : undefined;
+    if (iscSTC && isNaN(iscSTCValue!)) {
       setError(t.errors.invalidNumber);
       return;
     }
@@ -63,7 +102,12 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
         await client.models.SolarPanel.create({
           name: name.trim(),
           vocSTC: vocSTCValue,
-          temperatureCoefficientOfVOC: tempCoeffValue,
+          temperatureCoefficientOfVOC: tempCoeffVOCValue,
+          temperatureCoefficientOfISC: tempCoeffISCValue ?? 0,
+          temperatureCoefficientOfPmax: tempCoeffPmaxValue ?? 0,
+          impSTC: impSTCValue ?? 0,
+          vmpSTC: vmpSTCValue ?? 0,
+          iscSTC: iscSTCValue ?? 0,
           manufacturerId: manufacturerId || ''
         });
       } else if (solarPanel?.id) {
@@ -71,17 +115,27 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
           id: solarPanel.id,
           name: name.trim(),
           vocSTC: vocSTCValue,
-          temperatureCoefficientOfVOC: tempCoeffValue,
+          temperatureCoefficientOfVOC: tempCoeffVOCValue,
+          temperatureCoefficientOfISC: tempCoeffISCValue ?? 0,
+          temperatureCoefficientOfPmax: tempCoeffPmaxValue ?? 0,
+          impSTC: impSTCValue ?? 0,
+          vmpSTC: vmpSTCValue ?? 0,
+          iscSTC: iscSTCValue ?? 0,
           manufacturerId: manufacturerId || ''
         });
       }
       setName('');
       setVocSTC('');
       setTemperatureCoefficientOfVOC('');
+      setTemperatureCoefficientOfISC('');
+      setTemperatureCoefficientOfPmax('');
+      setImpSTC('');
+      setVmpSTC('');
+      setIscSTC('');
       setManufacturerId('');
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Произошла ошибка');
+      setError(err instanceof Error ? err.message : t.errors.required);
     } finally {
       setIsLoading(false);
     }
@@ -91,10 +145,17 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
     <Card>
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap="1rem">
+          <Text fontSize="small" color="gray">
+            {t.solarPanels.datasheetInfo}
+          </Text>
+          <Text fontSize="small" color="gray">
+            {t.calculation.requiredField}
+          </Text>
+
           <div>
             <SelectField
               id="manufacturerId"
-              label={t.solarPanels.manufacturer}
+              label={`${t.solarPanels.manufacturer} *`}
               value={manufacturerId}
               onChange={(e) => setManufacturerId(e.target.value)}
               data-1p-ignore
@@ -110,18 +171,19 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
           </div>
 
           <div>
-            <Label htmlFor="name">{t.solarPanels.name}</Label>
+            <Label htmlFor="name">{t.solarPanels.name} *</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               data-1p-ignore
               required
+              placeholder={t.solarPanels.namePlaceholder}
             />
           </div>
 
           <div>
-            <Label htmlFor="vocSTC">{t.solarPanels.vocSTC}</Label>
+            <Label htmlFor="vocSTC">{t.solarPanels.vocSTC} *</Label>
             <Input
               id="vocSTC"
               type="number"
@@ -130,11 +192,12 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
               onChange={(e) => setVocSTC(e.target.value)}
               data-1p-ignore
               required
+              placeholder={t.solarPanels.vocSTCPlaceholder}
             />
           </div>
 
           <div>
-            <Label htmlFor="temperatureCoefficientOfVOC">{t.solarPanels.temperatureCoefficient}</Label>
+            <Label htmlFor="temperatureCoefficientOfVOC">{t.solarPanels.temperatureCoefficient} *</Label>
             <Input
               id="temperatureCoefficientOfVOC"
               type="number"
@@ -143,6 +206,72 @@ export default function SolarPanelForm({ solarPanel, mode, onSuccess }: SolarPan
               onChange={(e) => setTemperatureCoefficientOfVOC(e.target.value)}
               data-1p-ignore
               required
+              placeholder={t.solarPanels.temperatureCoefficientPlaceholder}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="temperatureCoefficientOfISC">{t.solarPanels.temperatureCoefficientISC}</Label>
+            <Input
+              id="temperatureCoefficientOfISC"
+              type="number"
+              step="0.01"
+              value={temperatureCoefficientOfISC}
+              onChange={(e) => setTemperatureCoefficientOfISC(e.target.value)}
+              data-1p-ignore
+              placeholder={t.solarPanels.temperatureCoefficientISCPlaceholder}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="temperatureCoefficientOfPmax">{t.solarPanels.temperatureCoefficientPmax}</Label>
+            <Input
+              id="temperatureCoefficientOfPmax"
+              type="number"
+              step="0.01"
+              value={temperatureCoefficientOfPmax}
+              onChange={(e) => setTemperatureCoefficientOfPmax(e.target.value)}
+              data-1p-ignore
+              placeholder={t.solarPanels.temperatureCoefficientPmaxPlaceholder}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="impSTC">{t.solarPanels.impSTC}</Label>
+            <Input
+              id="impSTC"
+              type="number"
+              step="0.01"
+              value={impSTC}
+              onChange={(e) => setImpSTC(e.target.value)}
+              data-1p-ignore
+              placeholder={t.solarPanels.impSTCPlaceholder}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vmpSTC">{t.solarPanels.vmpSTC}</Label>
+            <Input
+              id="vmpSTC"
+              type="number"
+              step="0.01"
+              value={vmpSTC}
+              onChange={(e) => setVmpSTC(e.target.value)}
+              data-1p-ignore
+              placeholder={t.solarPanels.vmpSTCPlaceholder}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="iscSTC">{t.solarPanels.iscSTC}</Label>
+            <Input
+              id="iscSTC"
+              type="number"
+              step="0.01"
+              value={iscSTC}
+              onChange={(e) => setIscSTC(e.target.value)}
+              data-1p-ignore
+              placeholder={t.solarPanels.iscSTCPlaceholder}
             />
           </div>
 
