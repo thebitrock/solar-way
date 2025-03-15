@@ -18,7 +18,7 @@ import SolarPanelForm from './components/SolarPanelForm';
 import Modal from './components/Modal';
 import Autocomplete from './components/Autocomplete';
 import VoltageTable from './components/VoltageTable';
-import { Button, Card, Flex, Text, SliderField, Grid } from '@aws-amplify/ui-react';
+import { Button, Card, Flex, Text, SliderField, Grid, StepperField } from '@aws-amplify/ui-react';
 import { translations } from './i18n/translations';
 import { useLanguage } from './hooks/useLanguage';
 
@@ -44,6 +44,45 @@ export default function Home() {
     current: number;
     power: number;
   }>>([]);
+  const [minTemp, setMinTemp] = useState<number>(-30);
+  const [maxTemp, setMaxTemp] = useState<number>(25);
+
+  // Загрузка сохраненных значений
+  useEffect(() => {
+    const savedMinTemp = localStorage.getItem('minTemp');
+    const savedMaxTemp = localStorage.getItem('maxTemp');
+    const savedPanelCount = localStorage.getItem('panelCount');
+    
+    if (savedMinTemp) {
+      setMinTemp(Number(savedMinTemp));
+    }
+    if (savedMaxTemp) {
+      setMaxTemp(Number(savedMaxTemp));
+    }
+    if (savedPanelCount) {
+      setPanelCount(Number(savedPanelCount));
+    }
+  }, []);
+
+  // Сохранение температур в localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('minTemp', minTemp.toString());
+    }
+  }, [minTemp]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('maxTemp', maxTemp.toString());
+    }
+  }, [maxTemp]);
+
+  // Сохранение количества панелей в localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('panelCount', panelCount.toString());
+    }
+  }, [panelCount]);
 
   // Загрузка данных
   useEffect(() => {
@@ -85,8 +124,8 @@ export default function Home() {
       temperatureCoefficientOfPmax 
     } = selectedSolarPanel;
     
-    // Расчет для температур от -30 до +25
-    for (let temp = -30; temp <= 25; temp++) {
+    // Расчет для температур от minTemp до maxTemp
+    for (let temp = minTemp; temp <= maxTemp; temp++) {
       // Формула для напряжения: Voc(T) = Voc(STC) * (1 + α * (T - 25))
       // где α - температурный коэффициент в %/°C
       const voltage = vocSTC * (1 + (temperatureCoefficientOfVOC / 100) * (temp - 25));
@@ -109,7 +148,7 @@ export default function Home() {
     }
 
     setCalculatedVoltages(results);
-  }, [selectedSolarPanel, panelCount]);
+  }, [selectedSolarPanel, panelCount, minTemp, maxTemp]);
 
   const handleDeleteManufacturer = async (id: string) => {
     try {
@@ -280,6 +319,41 @@ export default function Home() {
                 </Flex>
               )}
             </div>
+
+            {/* Управление диапазоном температур */}
+            <Card className="my-4">
+              <Flex direction="column" gap="1rem">
+                <Text fontWeight="bold">{t.calculation.temperatureRange}</Text>
+                <Flex gap="2rem">
+                  <SliderField
+                    label={t.calculation.minTemperature}
+                    min={-50}
+                    max={-1}
+                    step={1}
+                    value={minTemp}
+                    onChange={(value) => {
+                      const newValue = Number(value);
+                      if (newValue >= -50 && newValue <= -1) {
+                        setMinTemp(newValue);
+                      }
+                    }}
+                  />
+                  <SliderField
+                    label={t.calculation.maxTemperature}
+                    min={1}
+                    max={100}
+                    step={1}
+                    value={maxTemp}
+                    onChange={(value) => {
+                      const newValue = Number(value);
+                      if (newValue >= 1 && newValue <= 100) {
+                        setMaxTemp(newValue);
+                      }
+                    }}
+                  />
+                </Flex>
+              </Flex>
+            </Card>
 
             {/* Таблица с расчетами */}
             {calculatedVoltages.length > 0 && (
