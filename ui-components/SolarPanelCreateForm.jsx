@@ -21,22 +21,53 @@ export default function SolarPanelCreateForm(props) {
     name: "",
     vocSTC: "",
     temperatureCoefficientOfVOC: "",
+    temperatureCoefficientOfISC: "",
+    temperatureCoefficientOfPmax: "",
+    impSTC: "",
+    vmpSTC: "",
+    iscSTC: "",
+    impNOCT: "",
+    vmpNOCT: "",
+    iscNOCT: "",
   };
   const [name, setName] = React.useState(initialValues.name);
   const [vocSTC, setVocSTC] = React.useState(initialValues.vocSTC);
   const [temperatureCoefficientOfVOC, setTemperatureCoefficientOfVOC] =
     React.useState(initialValues.temperatureCoefficientOfVOC);
+  const [temperatureCoefficientOfISC, setTemperatureCoefficientOfISC] =
+    React.useState(initialValues.temperatureCoefficientOfISC);
+  const [temperatureCoefficientOfPmax, setTemperatureCoefficientOfPmax] =
+    React.useState(initialValues.temperatureCoefficientOfPmax);
+  const [impSTC, setImpSTC] = React.useState(initialValues.impSTC);
+  const [vmpSTC, setVmpSTC] = React.useState(initialValues.vmpSTC);
+  const [iscSTC, setIscSTC] = React.useState(initialValues.iscSTC);
+  const [impNOCT, setImpNOCT] = React.useState(initialValues.impNOCT);
+  const [vmpNOCT, setVmpNOCT] = React.useState(initialValues.vmpNOCT);
+  const [iscNOCT, setIscNOCT] = React.useState(initialValues.iscNOCT);
   const [errors, setErrors] = React.useState({});
   const resetStateValues = () => {
     setName(initialValues.name);
     setVocSTC(initialValues.vocSTC);
     setTemperatureCoefficientOfVOC(initialValues.temperatureCoefficientOfVOC);
+    setTemperatureCoefficientOfISC(initialValues.temperatureCoefficientOfISC);
+    setTemperatureCoefficientOfPmax(initialValues.temperatureCoefficientOfPmax);
+    setImpSTC(initialValues.impSTC);
+    setVmpSTC(initialValues.vmpSTC);
+    setIscSTC(initialValues.iscSTC);
+    setImpNOCT(initialValues.impNOCT);
+    setVmpNOCT(initialValues.vmpNOCT);
+    setIscNOCT(initialValues.iscNOCT);
     setErrors({});
   };
   const validations = {
     name: [{ type: "Required" }],
     vocSTC: [{ type: "Required" }],
     temperatureCoefficientOfVOC: [{ type: "Required" }],
+    temperatureCoefficientOfISC: [{ type: "Required" }],
+    temperatureCoefficientOfPmax: [{ type: "Required" }],
+    impSTC: [{ type: "Required" }],
+    vmpSTC: [{ type: "Required" }],
+    iscSTC: [{ type: "Required" }],
   };
   const runValidationTasks = async (
     fieldName,
@@ -67,6 +98,14 @@ export default function SolarPanelCreateForm(props) {
           name,
           vocSTC,
           temperatureCoefficientOfVOC,
+          temperatureCoefficientOfISC,
+          temperatureCoefficientOfPmax,
+          impSTC,
+          vmpSTC,
+          iscSTC,
+          impNOCT,
+          vmpNOCT,
+          iscNOCT,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -132,6 +171,14 @@ export default function SolarPanelCreateForm(props) {
               name: value,
               vocSTC,
               temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC,
+              iscSTC,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT,
             };
             const result = onChange(modelFields);
             value = result?.name ?? value;
@@ -162,6 +209,14 @@ export default function SolarPanelCreateForm(props) {
               name,
               vocSTC: value,
               temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC,
+              iscSTC,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT,
             };
             const result = onChange(modelFields);
             value = result?.vocSTC ?? value;
@@ -192,6 +247,14 @@ export default function SolarPanelCreateForm(props) {
               name,
               vocSTC,
               temperatureCoefficientOfVOC: value,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC,
+              iscSTC,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT,
             };
             const result = onChange(modelFields);
             value = result?.temperatureCoefficientOfVOC ?? value;
@@ -210,6 +273,320 @@ export default function SolarPanelCreateForm(props) {
         errorMessage={errors.temperatureCoefficientOfVOC?.errorMessage}
         hasError={errors.temperatureCoefficientOfVOC?.hasError}
         {...getOverrideProps(overrides, "temperatureCoefficientOfVOC")}
+      ></TextField>
+      <TextField
+        label="Temperature coefficient of isc"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={temperatureCoefficientOfISC}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC: value,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC,
+              iscSTC,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT,
+            };
+            const result = onChange(modelFields);
+            value = result?.temperatureCoefficientOfISC ?? value;
+          }
+          if (errors.temperatureCoefficientOfISC?.hasError) {
+            runValidationTasks("temperatureCoefficientOfISC", value);
+          }
+          setTemperatureCoefficientOfISC(value);
+        }}
+        onBlur={() =>
+          runValidationTasks(
+            "temperatureCoefficientOfISC",
+            temperatureCoefficientOfISC
+          )
+        }
+        errorMessage={errors.temperatureCoefficientOfISC?.errorMessage}
+        hasError={errors.temperatureCoefficientOfISC?.hasError}
+        {...getOverrideProps(overrides, "temperatureCoefficientOfISC")}
+      ></TextField>
+      <TextField
+        label="Temperature coefficient of pmax"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={temperatureCoefficientOfPmax}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax: value,
+              impSTC,
+              vmpSTC,
+              iscSTC,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT,
+            };
+            const result = onChange(modelFields);
+            value = result?.temperatureCoefficientOfPmax ?? value;
+          }
+          if (errors.temperatureCoefficientOfPmax?.hasError) {
+            runValidationTasks("temperatureCoefficientOfPmax", value);
+          }
+          setTemperatureCoefficientOfPmax(value);
+        }}
+        onBlur={() =>
+          runValidationTasks(
+            "temperatureCoefficientOfPmax",
+            temperatureCoefficientOfPmax
+          )
+        }
+        errorMessage={errors.temperatureCoefficientOfPmax?.errorMessage}
+        hasError={errors.temperatureCoefficientOfPmax?.hasError}
+        {...getOverrideProps(overrides, "temperatureCoefficientOfPmax")}
+      ></TextField>
+      <TextField
+        label="Imp stc"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={impSTC}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC: value,
+              vmpSTC,
+              iscSTC,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT,
+            };
+            const result = onChange(modelFields);
+            value = result?.impSTC ?? value;
+          }
+          if (errors.impSTC?.hasError) {
+            runValidationTasks("impSTC", value);
+          }
+          setImpSTC(value);
+        }}
+        onBlur={() => runValidationTasks("impSTC", impSTC)}
+        errorMessage={errors.impSTC?.errorMessage}
+        hasError={errors.impSTC?.hasError}
+        {...getOverrideProps(overrides, "impSTC")}
+      ></TextField>
+      <TextField
+        label="Vmp stc"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={vmpSTC}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC: value,
+              iscSTC,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT,
+            };
+            const result = onChange(modelFields);
+            value = result?.vmpSTC ?? value;
+          }
+          if (errors.vmpSTC?.hasError) {
+            runValidationTasks("vmpSTC", value);
+          }
+          setVmpSTC(value);
+        }}
+        onBlur={() => runValidationTasks("vmpSTC", vmpSTC)}
+        errorMessage={errors.vmpSTC?.errorMessage}
+        hasError={errors.vmpSTC?.hasError}
+        {...getOverrideProps(overrides, "vmpSTC")}
+      ></TextField>
+      <TextField
+        label="Isc stc"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={iscSTC}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC,
+              iscSTC: value,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT,
+            };
+            const result = onChange(modelFields);
+            value = result?.iscSTC ?? value;
+          }
+          if (errors.iscSTC?.hasError) {
+            runValidationTasks("iscSTC", value);
+          }
+          setIscSTC(value);
+        }}
+        onBlur={() => runValidationTasks("iscSTC", iscSTC)}
+        errorMessage={errors.iscSTC?.errorMessage}
+        hasError={errors.iscSTC?.hasError}
+        {...getOverrideProps(overrides, "iscSTC")}
+      ></TextField>
+      <TextField
+        label="Imp noct"
+        isRequired={false}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={impNOCT}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC,
+              iscSTC,
+              impNOCT: value,
+              vmpNOCT,
+              iscNOCT,
+            };
+            const result = onChange(modelFields);
+            value = result?.impNOCT ?? value;
+          }
+          if (errors.impNOCT?.hasError) {
+            runValidationTasks("impNOCT", value);
+          }
+          setImpNOCT(value);
+        }}
+        onBlur={() => runValidationTasks("impNOCT", impNOCT)}
+        errorMessage={errors.impNOCT?.errorMessage}
+        hasError={errors.impNOCT?.hasError}
+        {...getOverrideProps(overrides, "impNOCT")}
+      ></TextField>
+      <TextField
+        label="Vmp noct"
+        isRequired={false}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={vmpNOCT}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC,
+              iscSTC,
+              impNOCT,
+              vmpNOCT: value,
+              iscNOCT,
+            };
+            const result = onChange(modelFields);
+            value = result?.vmpNOCT ?? value;
+          }
+          if (errors.vmpNOCT?.hasError) {
+            runValidationTasks("vmpNOCT", value);
+          }
+          setVmpNOCT(value);
+        }}
+        onBlur={() => runValidationTasks("vmpNOCT", vmpNOCT)}
+        errorMessage={errors.vmpNOCT?.errorMessage}
+        hasError={errors.vmpNOCT?.hasError}
+        {...getOverrideProps(overrides, "vmpNOCT")}
+      ></TextField>
+      <TextField
+        label="Isc noct"
+        isRequired={false}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={iscNOCT}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              name,
+              vocSTC,
+              temperatureCoefficientOfVOC,
+              temperatureCoefficientOfISC,
+              temperatureCoefficientOfPmax,
+              impSTC,
+              vmpSTC,
+              iscSTC,
+              impNOCT,
+              vmpNOCT,
+              iscNOCT: value,
+            };
+            const result = onChange(modelFields);
+            value = result?.iscNOCT ?? value;
+          }
+          if (errors.iscNOCT?.hasError) {
+            runValidationTasks("iscNOCT", value);
+          }
+          setIscNOCT(value);
+        }}
+        onBlur={() => runValidationTasks("iscNOCT", iscNOCT)}
+        errorMessage={errors.iscNOCT?.errorMessage}
+        hasError={errors.iscNOCT?.hasError}
+        {...getOverrideProps(overrides, "iscNOCT")}
       ></TextField>
       <Flex
         justifyContent="space-between"

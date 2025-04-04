@@ -1,11 +1,5 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any unauthenticated user can "create", "read", "update", 
-and "delete" any "Todo" records.
-=========================================================================*/
 const schema = a.schema({
   Manufacturer: a
     .model({
@@ -13,18 +7,27 @@ const schema = a.schema({
       solarPanels: a.hasMany('SolarPanel', 'manufacturerId')
     })
     .authorization((allow) => [allow.guest()]),
-  SolarPanel: a.
-    model({
+  SolarPanel: a
+    .model({
       manufacturer: a.belongsTo('Manufacturer', 'manufacturerId'),
       manufacturerId: a.id().required(),
       name: a.string().required(),
-      vocSTC: a.float().required(),
       temperatureCoefficientOfVOC: a.float().required(),
-      temperatureCoefficientOfISC: a.float(),
-      temperatureCoefficientOfPmax: a.float(),
-      impSTC: a.float(),
-      vmpSTC: a.float(),
-      iscSTC: a.float(),
+      temperatureCoefficientOfISC: a.float().required(),
+      temperatureCoefficientOfPmax: a.float().required(),
+      characteristics: a.hasMany('PanelCharacteristics', 'solarPanelId'),
+    })
+    .authorization((allow) => [allow.guest()]),
+  PanelCharacteristics: a
+    .model({
+      maximumPower: a.float().required(),
+      openCircuitVoltage: a.float().required(),
+      shortCircuitCurrent: a.float().required(),
+      voltageAtMaximumPower: a.float().required(),
+      currentAtMaximumPower: a.float().required(),
+      solarPanel: a.belongsTo('SolarPanel', 'solarPanelId'),
+      solarPanelId: a.id().required(),
+      type: a.string().required(),
     })
     .authorization((allow) => [allow.guest()]),
 });

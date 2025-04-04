@@ -2,31 +2,35 @@
 
 import { useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '@/amplify/data/resource';
-import { Button, TextField, Flex } from '@aws-amplify/ui-react';
-import { translations } from '../i18n/translations';
-import { useLanguage } from '../hooks/useLanguage';
+import { Button, Card, Flex, Input, Label, Text } from '@aws-amplify/ui-react';
+import { useTranslation } from '../hooks/useTranslation';
+import { Schema } from '@/amplify/data/resource';
 
 const client = generateClient<Schema>();
 
+type ManufacturerInput = {
+  name: string;
+};
+
 interface ManufacturerFormProps {
+  manufacturer?: ManufacturerInput & { id: string };
   mode: 'create' | 'update';
-  manufacturer?: Schema['Manufacturer']['type'];
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
-export default function ManufacturerForm({ mode, manufacturer, onSuccess }: ManufacturerFormProps) {
-  const { language } = useLanguage();
-  const t = translations[language];
+export default function ManufacturerForm({ manufacturer, mode, onSuccess }: ManufacturerFormProps) {
+  const t = useTranslation();
   const [name, setName] = useState(manufacturer?.name || '');
-  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setIsLoading(true);
+    setError(null);
 
     if (!name.trim()) {
-      setError(t.errors.required);
+      setError(t('errors.required'));
       return;
     }
 
@@ -35,38 +39,55 @@ export default function ManufacturerForm({ mode, manufacturer, onSuccess }: Manu
         await client.models.Manufacturer.create({
           name: name.trim()
         });
-      } else if (manufacturer) {
+      } else if (manufacturer?.id) {
         await client.models.Manufacturer.update({
           id: manufacturer.id,
           name: name.trim()
         });
       }
-      onSuccess();
-    } catch (error) {
-      console.error('Error saving manufacturer:', error);
-      setError('An error occurred while saving');
+      setName('');
+      onSuccess?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('errors.unknown'));
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Flex direction="column" gap="1rem">
-        <TextField
-          label={t.manufacturers.name}
-          placeholder={t.manufacturers.namePlaceholder}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          errorMessage={error}
-        />
-        <Flex gap="1rem" justifyContent="flex-end">
-          <Button type="submit">
-            {t.solarPanels.submit}
-          </Button>
-          <Button type="button" onClick={onSuccess}>
-            {t.solarPanels.cancel}
-          </Button>
+    <Card>
+      <form onSubmit={handleSubmit}>
+        <Flex direction="column" gap="1rem">
+          <div>
+            <Label htmlFor="name">{t('manufacturers.name')} *</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              data-1p-ignore
+              required
+              placeholder={t('manufacturers.namePlaceholder')}
+            />
+          </div>
+
+          {error && (
+            <Text color="red">{error}</Text>
+          )}
+
+          <Flex gap="1rem" justifyContent="flex-end">
+            <Button
+              type="submit"
+              isLoading={isLoading}
+              loadingText={mode === 'create' ? t('manufacturers.creating') : t('manufacturers.updating')}
+            >
+              {mode === 'create' ? t('manufacturers.create') : t('manufacturers.update')}
+            </Button>
+            <Button type="button" onClick={onSuccess}>
+              {t('manufacturers.cancel')}
+            </Button>
+          </Flex>
         </Flex>
-      </Flex>
-    </form>
+      </form>
+    </Card>
   );
 } 

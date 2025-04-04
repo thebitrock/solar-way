@@ -8,9 +8,8 @@ import '@aws-amplify/ui-react/styles/card.layer.css' // component specific
 import '@aws-amplify/ui-react/styles/flex.layer.css' // component specific
 import '@aws-amplify/ui-react/styles/grid.layer.css' // component specific
 import '@aws-amplify/ui-react/styles/table.layer.css';
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 import ManufacturerForm from './components/ManufacturerForm';
@@ -18,22 +17,62 @@ import SolarPanelForm from './components/SolarPanelForm';
 import Modal from './components/Modal';
 import Autocomplete from './components/Autocomplete';
 import VoltageTable from './components/VoltageTable';
-import { Button, Card, Flex, Text, SliderField, Grid } from '@aws-amplify/ui-react';
-import { translations } from './i18n/translations';
+import PanelParametersTable from './components/PanelParametersTable';
+import { Button, Card, Flex, Text, SliderField, Grid, Label, Input } from '@aws-amplify/ui-react';
+import { useTranslation } from './hooks/useTranslation';
 import { useLanguage } from './hooks/useLanguage';
+import { Schema } from '@/amplify/data/resource';
+import { PanelCharacteristics, SolarPanel } from './types';
 
 Amplify.configure(outputs);
 
 const client = generateClient<Schema>();
 
+type Manufacturer = {
+  id: string;
+  name: string;
+  solarPanels?: SolarPanel[];
+};
+
+type ApiSolarPanel = {
+  id: string;
+  name: string;
+  manufacturerId: string;
+  temperatureCoefficientOfVOC: number;
+  temperatureCoefficientOfISC: number;
+  temperatureCoefficientOfPmax: number;
+  PanelCharacteristics?: {
+    items: PanelCharacteristics[];
+  };
+};
+
+interface AutocompleteProps<T> {
+  value: string;
+  onChange: (value: string) => void;
+  onSelect: (item: T) => void;
+  options: T[];
+  getOptionLabel: (item: T) => string;
+  placeholder: string;
+  id?: string;
+}
+
+interface ModalProps {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  isOpen: boolean;
+  type?: 'manufacturer' | 'solarPanel';
+}
+
 export default function Home() {
   const { language, toggleLanguage } = useLanguage();
-  const t = translations[language];
+  const t = useTranslation();
   const [activeTab, setActiveTab] = useState<'calculation' | 'manufacturers' | 'solarPanels'>('calculation');
-  const [selectedManufacturer, setSelectedManufacturer] = useState<Schema['Manufacturer']['type'] | null>(null);
-  const [selectedSolarPanel, setSelectedSolarPanel] = useState<Schema['SolarPanel']['type'] | null>(null);
-  const [manufacturers, setManufacturers] = useState<Array<Schema['Manufacturer']['type']>>([]);
-  const [solarPanels, setSolarPanels] = useState<Array<Schema['SolarPanel']['type']>>([]);
+  const [modalType, setModalType] = useState<'manufacturer' | 'solarPanel'>('manufacturer');
+  const [selectedManufacturer, setSelectedManufacturer] = useState<Manufacturer | null>(null);
+  const [selectedSolarPanel, setSelectedSolarPanel] = useState<SolarPanel | null>(null);
+  const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
+  const [solarPanels, setSolarPanels] = useState<SolarPanel[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddingManufacturer, setIsAddingManufacturer] = useState(false);
@@ -41,12 +80,20 @@ export default function Home() {
   const [isPanelInfoOpen, setIsPanelInfoOpen] = useState<boolean>(true);
   const [calculatedVoltages, setCalculatedVoltages] = useState<Array<{ 
     temperature: number; 
-    voltage: number;
-    current: number;
-    power: number;
+    voltage?: number;
+    current?: number;
+    power?: number;
+    voltageNOCT?: number;
+    currentNOCT?: number;
+    powerNOCT?: number;
+    voltageNMOT?: number;
+    currentNMOT?: number;
+    powerNMOT?: number;
   }>>([]);
   const [minTemp, setMinTemp] = useState<number>(-30);
   const [maxTemp, setMaxTemp] = useState<number>(25);
+  const [mpptMaxVDC, setMpptMaxVDC] = useState<number>(500);
+  const [selectedPanelId, setSelectedPanelId] = useState('');
 
   // Загрузка сохраненных значений
   useEffect(() => {
@@ -54,6 +101,7 @@ export default function Home() {
     const savedMaxTemp = localStorage.getItem('maxTemp');
     const savedPanelCount = localStorage.getItem('panelCount');
     const savedPanelInfoOpen = localStorage.getItem('panelInfoOpen');
+    const savedMpptMaxVDC = localStorage.getItem('mpptMaxVDC');
     
     if (savedMinTemp) {
       setMinTemp(Number(savedMinTemp));
@@ -66,6 +114,9 @@ export default function Home() {
     }
     if (savedPanelInfoOpen !== null) {
       setIsPanelInfoOpen(savedPanelInfoOpen === 'true');
+    }
+    if (savedMpptMaxVDC) {
+      setMpptMaxVDC(Number(savedMpptMaxVDC));
     }
   }, []);
 
@@ -96,75 +147,191 @@ export default function Home() {
     }
   }, [isPanelInfoOpen]);
 
+  // Сохранение MPPT Max VDC в localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mpptMaxVDC', mpptMaxVDC.toString());
+    }
+  }, [mpptMaxVDC]);
+
   // Загрузка данных
   useEffect(() => {
-    const manufacturerSubscription = client.models.Manufacturer.observeQuery().subscribe({
-      next: ({ items }) => setManufacturers(items),
+    const loadData = async () => {
+      try {
+        console.log('Loading data...');
+        const manufacturerResult = await (client.models as any).Manufacturer.list();
+        console.log('Manufacturers loaded:', manufacturerResult.data);
+        setManufacturers(manufacturerResult.data);
+
+        const solarPanelResult = await (client.models as any).SolarPanel.list({
+          include: {
+            PanelCharacteristics: {
+              fields: [
+                'id',
+                'type',
+                'maximumPower',
+                'openCircuitVoltage',
+                'shortCircuitCurrent',
+                'voltageAtMaximumPower',
+                'currentAtMaximumPower',
+                'solarPanelId'
+              ]
+            }
+          }
+        });
+
+        console.log('Raw solar panel response:', solarPanelResult.data);
+        
+        const processedPanels = solarPanelResult.data.map((panel: ApiSolarPanel) => {
+          const characteristics = panel.PanelCharacteristics?.items || [];
+          console.log(`Processing panel ${panel.id}, characteristics:`, characteristics);
+          return {
+            ...panel,
+            characteristics
+          };
+        });
+        
+        console.log('Processed panels:', processedPanels);
+        setSolarPanels(processedPanels);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+
+    loadData();
+
+    const manufacturerSubscription = (client.models as any).Manufacturer.observeQuery().subscribe({
+      next: ({ items }: { items: Manufacturer[] }) => {
+        console.log('Manufacturer subscription update:', items);
+        setManufacturers(items);
+      },
     });
 
-    const solarPanelSubscription = client.models.SolarPanel.observeQuery().subscribe({
-      next: ({ items }) => setSolarPanels(items
-        .filter((panel): panel is NonNullable<typeof panel> => panel !== null)
-        .map(panel => ({
-          ...panel,
-          temperatureCoefficientOfISC: panel.temperatureCoefficientOfISC ?? 0,
-          temperatureCoefficientOfPmax: panel.temperatureCoefficientOfPmax ?? 0,
-          impSTC: panel.impSTC ?? 0,
-          vmpSTC: panel.vmpSTC ?? 0,
-          iscSTC: panel.iscSTC ?? 0
-        }))),
+    const solarPanelSubscription = (client.models as any).SolarPanel.observeQuery().subscribe({
+      next: async ({ items }: { items: ApiSolarPanel[] }) => {
+        try {
+          console.log('Solar panel subscription update, items:', items);
+          const panelsWithCharacteristics = await Promise.all(items.map(async (panel) => {
+            const characteristicsResult = await (client.models as any).PanelCharacteristics.list({
+              filter: {
+                solarPanelId: { eq: panel.id }
+              }
+            });
+            console.log(`Characteristics for panel ${panel.id}:`, characteristicsResult.data);
+            return {
+              ...panel,
+              characteristics: characteristicsResult.data || []
+            };
+          }));
+          console.log('Updated panels with characteristics:', panelsWithCharacteristics);
+          setSolarPanels(panelsWithCharacteristics);
+        } catch (error) {
+          console.error('Error loading characteristics:', error);
+        }
+      },
+      error: (error: any) => {
+        console.error('Error in subscription:', error);
+      }
     });
 
     return () => {
+      console.log('Cleaning up subscriptions');
       manufacturerSubscription.unsubscribe();
       solarPanelSubscription.unsubscribe();
     };
   }, []);
 
-  // Расчет напряжений при изменении панели или количества
-  useEffect(() => {
+  // Расчет напряжений для разных температур
+  const calculateVoltages = () => {
     if (!selectedSolarPanel) return;
+    if (!selectedSolarPanel.characteristics || selectedSolarPanel.characteristics.length === 0) {
+      console.log('No characteristics available for voltage calculation');
+      return;
+    }
 
-    const results = [];
-    const { 
-      vocSTC, 
-      temperatureCoefficientOfVOC, 
-      iscSTC, 
-      temperatureCoefficientOfISC,
-      vmpSTC,
-      impSTC,
-      temperatureCoefficientOfPmax 
-    } = selectedSolarPanel;
-    
-    // Расчет для температур от minTemp до maxTemp
-    for (let temp = minTemp; temp <= maxTemp; temp++) {
-      // Формула для напряжения: Voc(T) = Voc(STC) * (1 + α * (T - 25))
-      // где α - температурный коэффициент в %/°C
-      const voltage = vocSTC * (1 + (temperatureCoefficientOfVOC / 100) * (temp - 25));
+    console.log('Selected solar panel:', selectedSolarPanel);
+    console.log('Characteristics:', selectedSolarPanel.characteristics);
 
-      // Формула для тока: Isc(T) = Isc(STC) * (1 + β * (T - 25))
-      // где β - температурный коэффициент Isc в %/°C
-      const current = (iscSTC ?? 0) * (1 + ((temperatureCoefficientOfISC ?? 0) / 100) * (temp - 25));
+    const voltages = [];
+    const tempCoeff = selectedSolarPanel.temperatureCoefficientOfVOC / 100;
+    const tempCoeffISC = selectedSolarPanel.temperatureCoefficientOfISC / 100;
+    const tempCoeffPmax = selectedSolarPanel.temperatureCoefficientOfPmax / 100;
 
-      // Формула для мощности: P(T) = Pmax(STC) * (1 + γ * (T - 25))
-      // где γ - температурный коэффициент Pmax в %/°C
-      const stcPower = (vmpSTC ?? 0) * (impSTC ?? 0); // Мощность при STC
-      const power = stcPower * (1 + ((temperatureCoefficientOfPmax ?? 0) / 100) * (temp - 25));
+    const characteristics = (Array.isArray(selectedSolarPanel.characteristics) 
+      ? selectedSolarPanel.characteristics 
+      : selectedSolarPanel.characteristics ? Object.values(selectedSolarPanel.characteristics) : []) as PanelCharacteristics[];
 
-      results.push({
+    console.log('Processed characteristics:', characteristics);
+
+    const stcCharacteristics = characteristics.find(c => c.type === 'STC');
+    const noctCharacteristics = characteristics.find(c => c.type === 'NOCT');
+    const nmotCharacteristics = characteristics.find(c => c.type === 'NMOT');
+
+    console.log('STC characteristics:', stcCharacteristics);
+    console.log('NOCT characteristics:', noctCharacteristics);
+    console.log('NMOT characteristics:', nmotCharacteristics);
+
+    for (let temp = minTemp; temp <= maxTemp; temp += 1) {
+      const deltaTemp = temp - 25;
+      const deltaTempNOCT = temp - 20;
+      const deltaTempNMOT = temp - 20;
+
+      const voltage = stcCharacteristics?.openCircuitVoltage 
+        ? stcCharacteristics.openCircuitVoltage * (1 + tempCoeff * deltaTemp) * panelCount
+        : undefined;
+
+      const current = stcCharacteristics?.shortCircuitCurrent 
+        ? stcCharacteristics.shortCircuitCurrent * (1 + tempCoeffISC * deltaTemp)
+        : undefined;
+
+      const power = stcCharacteristics?.maximumPower 
+        ? stcCharacteristics.maximumPower * (1 + tempCoeffPmax * deltaTemp) * panelCount
+        : undefined;
+
+      const voltageNOCT = noctCharacteristics?.openCircuitVoltage 
+        ? noctCharacteristics.openCircuitVoltage * (1 + tempCoeff * deltaTempNOCT) * panelCount
+        : undefined;
+
+      const currentNOCT = noctCharacteristics?.shortCircuitCurrent 
+        ? noctCharacteristics.shortCircuitCurrent * (1 + tempCoeffISC * deltaTempNOCT)
+        : undefined;
+
+      const powerNOCT = noctCharacteristics?.maximumPower 
+        ? noctCharacteristics.maximumPower * (1 + tempCoeffPmax * deltaTempNOCT) * panelCount
+        : undefined;
+
+      const voltageNMOT = nmotCharacteristics?.openCircuitVoltage 
+        ? nmotCharacteristics.openCircuitVoltage * (1 + tempCoeff * deltaTempNMOT) * panelCount
+        : undefined;
+
+      const currentNMOT = nmotCharacteristics?.shortCircuitCurrent 
+        ? nmotCharacteristics.shortCircuitCurrent * (1 + tempCoeffISC * deltaTempNMOT)
+        : undefined;
+
+      const powerNMOT = nmotCharacteristics?.maximumPower 
+        ? nmotCharacteristics.maximumPower * (1 + tempCoeffPmax * deltaTempNMOT) * panelCount
+        : undefined;
+
+      voltages.push({
         temperature: temp,
-        voltage: voltage * panelCount, // Умножаем на количество панелей, так как они соединены последовательно
-        current: current, // Ток не умножаем, так как панели соединены последовательно
-        power: power * panelCount // Умножаем на количество панелей для получения общей мощности
+        voltage,
+        current,
+        power,
+        voltageNOCT,
+        currentNOCT,
+        powerNOCT,
+        voltageNMOT,
+        currentNMOT,
+        powerNMOT,
       });
     }
 
-    setCalculatedVoltages(results);
-  }, [selectedSolarPanel, panelCount, minTemp, maxTemp]);
+    setCalculatedVoltages(voltages);
+  };
 
   const handleDeleteManufacturer = async (id: string) => {
     try {
-      await client.models.Manufacturer.delete({ id });
+      await (client.models as any).Manufacturer.delete({ id });
     } catch (error) {
       console.error('Error deleting manufacturer:', error);
     }
@@ -172,344 +339,390 @@ export default function Home() {
 
   const handleDeleteSolarPanel = async (id: string) => {
     try {
-      await client.models.SolarPanel.delete({ id });
+      await (client.models as any).SolarPanel.delete({ id });
     } catch (error) {
       console.error('Error deleting solar panel:', error);
     }
   };
 
-  const getSolarPanelLabel = (panel: Schema['SolarPanel']['type']) => {
-    const defaultLabel = 'Неизвестная панель'
-    
-    if (!panel) {
-      return defaultLabel
-    }
-
-    console.log(panel)
+  const getSolarPanelLabel = (panel: SolarPanel) => {
     const manufacturer = manufacturers.find(m => m.id === panel.manufacturerId);
-    return `${panel.name} (${manufacturer?.name || 'Неизвестный производитель'}) - Voc STC: ${panel.vocSTC}V`;
+    return `${manufacturer?.name || t('calculation.unknownManufacturer')} - ${panel.name}`;
+  };
+
+  useEffect(() => {
+    if (!selectedSolarPanel) return;
+    if (!selectedSolarPanel.characteristics || selectedSolarPanel.characteristics.length === 0) {
+      console.log('No characteristics available, skipping voltage calculation');
+      return;
+    }
+    calculateVoltages();
+  }, [selectedSolarPanel, panelCount, minTemp, maxTemp]);
+
+  const handlePanelSelect = async (panel: SolarPanel | null) => {
+    console.log('Selecting panel:', panel);
+    if (panel) {
+      try {
+        const characteristicsResult = await (client.models as any).PanelCharacteristics.list({
+          filter: {
+            solarPanelId: { eq: panel.id }
+          }
+        });
+        console.log('Loaded characteristics:', characteristicsResult.data);
+        
+        setSelectedSolarPanel({
+          ...panel,
+          characteristics: characteristicsResult.data || []
+        });
+      } catch (error) {
+        console.error('Error loading characteristics:', error);
+        setSelectedSolarPanel(panel);
+      }
+    } else {
+      setSelectedSolarPanel(null);
+    }
+    setSelectedPanelId(panel?.id || '');
+  };
+
+  const handlePanelCreate = (panel: SolarPanel) => {
+    setSolarPanels(prev => [...(prev || []), panel]);
+    setSelectedSolarPanel(panel);
+    setSelectedPanelId(panel.id);
   };
 
   return (
     <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <Flex justifyContent="space-between" alignItems="center" className="mb-8">
-          <h1 className="text-3xl font-bold">{t.title}</h1>
-          <Button onClick={toggleLanguage} variation="link">
-            {language === 'uk' ? '🇬🇧 EN' : '🇺🇦 UA'}
-          </Button>
-        </Flex>
-        
-        <br/>
-        {/* Табы для переключения между разделами */}
-        <div className="flex space-x-4 mb-6">
-          <button
-            className={`px-4 py-2 rounded ${
-              activeTab === 'calculation'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
-            onClick={() => setActiveTab('calculation')}
-          >
-            {t.tabs.calculation}
-          </button>
-          <button
-            className={`px-4 py-2 rounded ${
-              activeTab === 'manufacturers'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
-            onClick={() => setActiveTab('manufacturers')}
-          >
-            {t.tabs.manufacturers}
-          </button>
-          <button
-            className={`px-4 py-2 rounded ${
-              activeTab === 'solarPanels'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
-            onClick={() => setActiveTab('solarPanels')}
-          >
-            {t.tabs.solarPanels}
-          </button>
-        </div>
+      <Flex direction="column" gap="1rem">
+        <Card>
+          <Flex justifyContent="space-between" alignItems="center">
+            <h1 className="text-2xl font-bold">{t('title')}</h1>
+            <Button onClick={toggleLanguage}>
+              {language === 'uk' ? 'EN' : 'UK'}
+            </Button>
+          </Flex>
+        </Card>
 
-        {/* Основной контент */}
-        {activeTab === 'calculation' && (
-          <>
-            {/* Форма калькуляции */}
-            <Card className="mb-8">
-              <Flex direction="column" gap="1rem">
-                <Autocomplete
-                  items={solarPanels}
-                  value={searchValue}
-                  onChange={setSearchValue}
-                  onSelect={setSelectedSolarPanel}
-                  getLabel={getSolarPanelLabel}
-                  placeholder={t.calculation.selectPanel}
-                  label={t.calculation.selectPanel}
-                />
-
-                <Button onClick={() => setIsModalOpen(true)}>
-                  {t.calculation.addPanel}
-                </Button>
-              </Flex>
-            </Card>
-
-            {/* Информация о выбранной панели */}
-            {selectedSolarPanel && (
-              <Card className="mb-8">
-                <Flex direction="column" gap="1rem">
-                  <Button
-                    onClick={() => setIsPanelInfoOpen(!isPanelInfoOpen)}
-                    variation="link"
-                    className="text-left"
-                  >
-                    <Flex alignItems="center" gap="0.5rem">
-                      <Text className="text-xl font-bold">{t.calculation.panelInfo}</Text>
-                      <Text fontSize="large">{isPanelInfoOpen ? '▼' : '▶'}</Text>
-                    </Flex>
-                  </Button>
-                  
-                  {isPanelInfoOpen && (
-                    <Grid
-                      columnGap="1rem"
-                      rowGap="1rem"
-                      templateColumns="1fr 1fr"
-                    >
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.name}</Text>
-                        <Text>{selectedSolarPanel.name}</Text>
-                      </div>
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.manufacturer}</Text>
-                        <Text>
-                          {manufacturers.find(m => m.id === selectedSolarPanel.manufacturerId)?.name}
-                        </Text>
-                      </div>
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.vocSTC}</Text>
-                        <Text>{selectedSolarPanel.vocSTC}V</Text>
-                      </div>
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.temperatureCoefficient}</Text>
-                        <Text>{selectedSolarPanel.temperatureCoefficientOfVOC}%/°C</Text>
-                      </div>
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.temperatureCoefficientISC}</Text>
-                        <Text>{selectedSolarPanel.temperatureCoefficientOfISC ?? t.calculation.insufficientData}%/°C</Text>
-                      </div>
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.temperatureCoefficientPmax}</Text>
-                        <Text>{selectedSolarPanel.temperatureCoefficientOfPmax ?? t.calculation.insufficientData}%/°C</Text>
-                      </div>
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.impSTC}</Text>
-                        <Text>{selectedSolarPanel.impSTC ?? t.calculation.insufficientData}A</Text>
-                      </div>
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.vmpSTC}</Text>
-                        <Text>{selectedSolarPanel.vmpSTC ?? t.calculation.insufficientData}V</Text>
-                      </div>
-                      <div>
-                        <Text fontWeight="bold">{t.calculation.iscSTC}</Text>
-                        <Text>{selectedSolarPanel.iscSTC}A</Text>
-                      </div>
-                    </Grid>
-                  )}
-                </Flex>
-              </Card>
-            )}
-
-<Card className="my-4">
-              <Flex direction="column" gap="1rem">
-              <SliderField
-                label={t.calculation.panelCount}
-                min={1}
-                max={30}
-                step={1}
-                value={panelCount}
-                onChange={(value) => setPanelCount(value)}
-              />
-                          </Flex>
-              {selectedSolarPanel && (
-                <Flex direction="column" gap="0.5rem" className="mt-2">
-                  <Text fontWeight="bold">
-                    {t.calculation.totalVoltage} {selectedSolarPanel.vocSTC * panelCount}V
-                  </Text>
-                  <Text fontWeight="bold">
-                    {t.calculation.totalPowerSTC}: {selectedSolarPanel.vmpSTC && selectedSolarPanel.impSTC
-                      ? `${(selectedSolarPanel.vmpSTC * selectedSolarPanel.impSTC * panelCount).toFixed(2)}W`
-                      : t.calculation.insufficientData}
-                  </Text>
-                </Flex>
-              )}
-            
-
-            </Card>
-
-            {/* Управление диапазоном температур */}
-            <Card className="my-4">
-              <Flex direction="column" gap="1rem">
-                <Text fontWeight="bold">{t.calculation.temperatureRange}</Text>
-                <Flex gap="2rem">
-                  <SliderField
-                    label={t.calculation.minTemperature}
-                    min={-50}
-                    max={-1}
-                    step={1}
-                    value={minTemp}
-                    onChange={(value) => {
-                      const newValue = Number(value);
-                      if (newValue >= -50 && newValue <= -1) {
-                        setMinTemp(newValue);
-                      }
-                    }}
-                  />
-                  <SliderField
-                    label={t.calculation.maxTemperature}
-                    min={1}
-                    max={100}
-                    step={1}
-                    value={maxTemp}
-                    onChange={(value) => {
-                      const newValue = Number(value);
-                      if (newValue >= 1 && newValue <= 100) {
-                        setMaxTemp(newValue);
-                      }
-                    }}
-                  />
-                </Flex>
-              </Flex>
-            </Card>
-
-            {/* Таблица с расчетами */}
-            {calculatedVoltages.length > 0 && (
-              <VoltageTable voltages={calculatedVoltages} />
-            )}
-          </>
-        )}
-
-        {activeTab === 'manufacturers' && (
-          <Card>
-            <Flex direction="column" gap="1rem">
-              <Flex justifyContent="space-between" alignItems="center">
-                <h2 className="text-xl font-bold">{t.manufacturers.list}</h2>
-                <Button onClick={() => {
-                  setIsAddingManufacturer(true);
-                  setIsModalOpen(true);
-                }}>
-                  {t.manufacturers.add}
-                </Button>
-              </Flex>
-              <Flex direction="column" gap="1rem">
-                {manufacturers.map((manufacturer) => (
-                  <Flex key={manufacturer.id} justifyContent="space-between" alignItems="center">
-                    <Text>{manufacturer.name}</Text>
-                    <Flex gap="1rem">
-                      <Button
-                        onClick={() => {
-                          setSelectedManufacturer(manufacturer);
-                          setIsModalOpen(true);
-                        }}
-                      >
-                        {t.manufacturers.edit}
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteManufacturer(manufacturer.id)}
-                        variation="destructive"
-                      >
-                        {t.manufacturers.delete}
-                      </Button>
-                    </Flex>
-                  </Flex>
-                ))}
-              </Flex>
-            </Flex>
-          </Card>
-        )}
-
-        {activeTab === 'solarPanels' && (
-          <Card>
-            <Flex direction="column" gap="1rem">
-              <Flex justifyContent="space-between" alignItems="center">
-                <h2 className="text-xl font-bold">{t.solarPanels.list}</h2>
-                <Button onClick={() => setIsModalOpen(true)}>
-                  {t.solarPanels.add}
-                </Button>
-              </Flex>
-              <Flex direction="column" gap="1rem">
-                {solarPanels.filter(panel => panel !== null).map((panel) => (
-                  <Flex key={panel.id} justifyContent="space-between" alignItems="center">
-                    <div>
-                      <Text>{panel.name}</Text>
-                      <Text fontSize="small" color="gray">
-                        {manufacturers.find(m => m.id === panel.manufacturerId)?.name}
-                      </Text>
-                    </div>
-                    <Flex gap="1rem">
-                      <Button
-                        onClick={() => {
-                          setSelectedSolarPanel(panel);
-                          setIsModalOpen(true);
-                        }}
-                      >
-                        {t.solarPanels.edit}
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteSolarPanel(panel.id)}
-                        variation="destructive"
-                      >
-                        {t.solarPanels.delete}
-                      </Button>
-                    </Flex>
-                  </Flex>
-                ))}
-              </Flex>
-            </Flex>
-          </Card>
-        )}
-
-        {/* Модальное окно */}
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setIsAddingManufacturer(false);
-            setSelectedManufacturer(null);
-            setSelectedSolarPanel(null);
-          }}
-          title={
-              selectedSolarPanel
-              ? t.modal.editSolarPanel
-              : t.modal.addSolarPanel
-          }
-        >
-          {isAddingManufacturer || selectedManufacturer ? (
-            <ManufacturerForm
-              mode={selectedManufacturer ? 'update' : 'create'}
-              manufacturer={selectedManufacturer || undefined}
-              onSuccess={() => {
-                setIsModalOpen(false);
-                setIsAddingManufacturer(false);
-                setSelectedManufacturer(null);
+        <Card>
+          <Flex gap="1rem" marginBottom="1rem">
+            <Button
+              variation={activeTab === 'calculation' ? 'primary' : undefined}
+              onClick={() => setActiveTab('calculation')}
+            >
+              {t('tabs.calculation')}
+            </Button>
+            <Button
+              variation={activeTab === 'manufacturers' ? 'primary' : undefined}
+              onClick={() => {
+                setActiveTab('manufacturers');
+                setModalType('manufacturer');
               }}
-            />
-          ) : (
+            >
+              {t('tabs.manufacturers')}
+            </Button>
+            <Button
+              variation={activeTab === 'solarPanels' ? 'primary' : undefined}
+              onClick={() => {
+                setActiveTab('solarPanels');
+                setModalType('solarPanel');
+              }}
+            >
+              {t('tabs.solarPanels')}
+            </Button>
+          </Flex>
+
+          {activeTab === 'calculation' && (
+            <Card>
+              <Flex direction="column" gap="1rem">
+                <div>
+                  <Label>{t('calculation.selectPanel')}</Label>
+                  <Autocomplete<SolarPanel>
+                    items={solarPanels}
+                    value={searchValue}
+                    onChange={setSearchValue}
+                    onSelect={handlePanelSelect}
+                    getLabel={getSolarPanelLabel}
+                    placeholder={t('calculation.selectPanelPlaceholder')}
+                  />
+                </div>
+
+                {selectedSolarPanel && (
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">{t('calculation.panelInfo')}</h3>
+                      <button
+                        onClick={() => setIsPanelInfoOpen(!isPanelInfoOpen)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        {isPanelInfoOpen ? '▼' : '▶'}
+                      </button>
+                    </div>
+                    {isPanelInfoOpen && (
+                      <div className="space-y-6">
+                        {/* Basic Info */}
+                        <div className="grid grid-cols-1 gap-2">
+                          <div>
+                            <Text fontWeight="semibold">{t('calculation.name')}</Text>
+                            <Text>{selectedSolarPanel.name}</Text>
+                          </div>
+                          <div>
+                            <Text fontWeight="semibold">{t('calculation.manufacturer')}</Text>
+                            <Text>{manufacturers.find(m => m.id === selectedSolarPanel.manufacturerId)?.name || t('calculation.unknownManufacturer')}</Text>
+                          </div>
+                        </div>
+
+                        {/* Temperature Coefficients */}
+                        <div>
+                          <Text fontWeight="bold" className="mb-2">{t('calculation.panelParameters.temperatureCoefficients')}</Text>
+                          <table className="w-full border-collapse">
+                            <tbody>
+                              <tr className="border-b border-gray-200">
+                                <td className="py-2">
+                                  <Text>{t('calculation.panelParameters.temperatureCoefficients_isc')}</Text>
+                                </td>
+                                <td className="py-2 text-right">
+                                  {selectedSolarPanel.temperatureCoefficientOfISC > 0 ? '+' : ''}{selectedSolarPanel.temperatureCoefficientOfISC}%/°C
+                                </td>
+                              </tr>
+                              <tr className="border-b border-gray-200">
+                                <td className="py-2">
+                                  <Text>{t('calculation.panelParameters.temperatureCoefficients_voc')}</Text>
+                                </td>
+                                <td className="py-2 text-right">
+                                  {selectedSolarPanel.temperatureCoefficientOfVOC > 0 ? '+' : ''}{selectedSolarPanel.temperatureCoefficientOfVOC}%/°C
+                                </td>
+                              </tr>
+                              <tr className="border-b border-gray-200">
+                                <td className="py-2">
+                                  <Text>{t('calculation.panelParameters.temperatureCoefficients_pmax')}</Text>
+                                </td>
+                                <td className="py-2 text-right">
+                                  {selectedSolarPanel.temperatureCoefficientOfPmax > 0 ? '+' : ''}{selectedSolarPanel.temperatureCoefficientOfPmax}%/°C
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Panel Characteristics */}
+                        {selectedSolarPanel.characteristics && selectedSolarPanel.characteristics.length > 0 && (
+                          <div>
+                            <Text fontWeight="bold" className="mb-2">{t('calculation.characteristics.title')}</Text>
+                            <PanelParametersTable 
+                              characteristics={selectedSolarPanel.characteristics}
+                              t={t}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <Label>{t('calculation.panelCount')}</Label>
+                  <SliderField
+                    label=""
+                    value={panelCount}
+                    onChange={(value) => setPanelCount(value)}
+                    min={1}
+                    max={30}
+                    step={1}
+                    labelHidden={true}
+                  />
+                  <Text>{panelCount}</Text>
+                </div>
+
+                <div>
+                  <Label>{t('calculation.temperatureRange')}</Label>
+                  <Grid templateColumns="1fr 1fr" gap="1rem">
+                    <div>
+                      <Label>{t('calculation.minTemp')}</Label>
+                      <SliderField
+                        label=""
+                        value={minTemp}
+                        onChange={(value) => setMinTemp(value)}
+                        min={-50}
+                        max={0}
+                        step={1}
+                        labelHidden={true}
+                      />
+                      <Text>{minTemp}°C</Text>
+                    </div>
+                    <div>
+                      <Label>{t('calculation.maxTemp')}</Label>
+                      <SliderField
+                        label=""
+                        value={maxTemp}
+                        onChange={(value) => setMaxTemp(value)}
+                        min={1}
+                        max={50}
+                        step={1}
+                        labelHidden={true}
+                      />
+                      <Text>{maxTemp}°C</Text>
+                    </div>
+                  </Grid>
+                </div>
+
+                <div>
+                  <Label>{t('calculation.mpptMaxVDC')}</Label>
+                  <SliderField
+                    label=""
+                    value={mpptMaxVDC}
+                    onChange={(value) => setMpptMaxVDC(value)}
+                    min={50}
+                    max={1500}
+                    step={10}
+                    labelHidden={true}
+                  />
+                  <Text>{mpptMaxVDC}V</Text>
+                </div>
+
+                {calculatedVoltages.length > 0 && (
+                  <VoltageTable
+                    voltages={calculatedVoltages}
+                    mpptMaxVDC={mpptMaxVDC}
+                    translations={{
+                      temperature: t('calculation.temperature'),
+                      openCircuitVoltage: t('calculation.openCircuitVoltage'),
+                      shortCircuitCurrent: t('calculation.shortCircuitCurrent'),
+                      maximumPower: t('calculation.maximumPower'),
+                      totalPowerSTC: t('calculation.totalPowerSTC'),
+                      totalPowerNOCT: t('calculation.totalPowerNOCT'),
+                      totalPowerNMOT: t('calculation.totalPowerNMOT'),
+                      notProvided: t('calculation.notProvided')
+                    }}
+                  />
+                )}
+              </Flex>
+            </Card>
+          )}
+
+          {activeTab === 'manufacturers' && (
             <Flex direction="column" gap="1rem">
-              <SolarPanelForm
-                mode={selectedSolarPanel ? 'update' : 'create'}
-                solarPanel={selectedSolarPanel || undefined}
-                onSuccess={() => {
-                  setIsModalOpen(false);
-                  setSelectedSolarPanel(null);
-                }}
-              />
+              <Button onClick={() => setIsModalOpen(true)}>
+                {t('modal.addManufacturer')}
+              </Button>
+              <table className="min-w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left p-2">{t('manufacturers.name')}</th>
+                    <th className="text-right p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {manufacturers.map((manufacturer) => (
+                    <tr key={manufacturer.id}>
+                      <td className="p-2">{manufacturer.name}</td>
+                      <td className="text-right p-2">
+                        <Button
+                          variation="link"
+                          onClick={() => {
+                            setSelectedManufacturer(manufacturer);
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          {t('modal.editManufacturer')}
+                        </Button>
+                        <Button
+                          variation="link"
+                          onClick={() => handleDeleteManufacturer(manufacturer.id)}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </Flex>
           )}
-        </Modal>
-      </div>
+
+          {activeTab === 'solarPanels' && (
+            <Flex direction="column" gap="1rem">
+              <Button onClick={() => setIsModalOpen(true)}>
+                {t('modal.addSolarPanel')}
+              </Button>
+              <table className="min-w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left p-2">{t('solarPanels.name')}</th>
+                    <th className="text-left p-2">{t('manufacturers.name')}</th>
+                    <th className="text-right p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {solarPanels.map((panel: SolarPanel) => {
+                    const manufacturer = manufacturers.find(m => m.id === panel.manufacturerId);
+                    return (
+                      <tr key={panel.id}>
+                        <td className="p-2">{panel.name}</td>
+                        <td className="p-2">{manufacturer?.name || t('calculation.unknownManufacturer')}</td>
+                        <td className="text-right p-2">
+                          <Button
+                            variation="link"
+                            onClick={() => {
+                              handlePanelSelect(panel);
+                              setIsModalOpen(true);
+                            }}
+                          >
+                            {t('modal.editSolarPanel')}
+                          </Button>
+                          <Button
+                            variation="link"
+                            onClick={() => handleDeleteSolarPanel(panel.id)}
+                          >
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Flex>
+          )}
+        </Card>
+      </Flex>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedSolarPanel(null);
+          setSelectedManufacturer(null);
+        }}
+        title={
+          modalType === 'manufacturer'
+            ? selectedManufacturer
+              ? t('modal.editManufacturer')
+              : t('modal.addManufacturer')
+            : selectedSolarPanel
+              ? t('modal.editSolarPanel')
+              : t('modal.addSolarPanel')
+        }
+        type={modalType}
+      >
+        {modalType === 'manufacturer' ? (
+          <ManufacturerForm
+            manufacturer={selectedManufacturer || undefined}
+            mode={selectedManufacturer ? 'update' : 'create'}
+            onSuccess={() => {
+              setIsModalOpen(false);
+              setSelectedManufacturer(null);
+            }}
+          />
+        ) : (
+          <SolarPanelForm
+            solarPanel={selectedSolarPanel || undefined}
+            mode={selectedSolarPanel ? 'update' : 'create'}
+            onSuccess={() => {
+              setIsModalOpen(false);
+              setSelectedSolarPanel(null);
+            }}
+          />
+        )}
+      </Modal>
     </main>
   );
 }

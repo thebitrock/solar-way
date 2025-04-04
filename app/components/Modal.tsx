@@ -2,19 +2,18 @@
 
 import { useEffect } from 'react';
 import { Card, Flex, Button } from '@aws-amplify/ui-react';
-import { translations } from '../i18n/translations';
-import { useLanguage } from '../hooks/useLanguage';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
   title: string;
+  type?: 'manufacturer' | 'solarPanel';
 }
 
-export default function Modal({ isOpen, onClose, children, title }: ModalProps) {
-  const { language } = useLanguage();
-  const t = translations[language];
+export default function Modal({ isOpen, onClose, children, title, type }: ModalProps) {
+  const t = useTranslation();
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -43,7 +42,7 @@ export default function Modal({ isOpen, onClose, children, title }: ModalProps) 
           <Flex justifyContent="space-between" alignItems="center">
             <h2 className="text-xl font-bold">{title}</h2>
             <Button onClick={onClose} variation="link">
-              {t.modal.close}
+              {t('modal.close')}
             </Button>
           </Flex>
           {children}

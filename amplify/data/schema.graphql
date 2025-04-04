@@ -1,0 +1,29 @@
+type Manufacturer @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  name: String!
+  solarPanels: [SolarPanel] @hasMany
+}
+
+type SolarPanel @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  name: String!
+  manufacturerId: ID!
+  manufacturer: Manufacturer @belongsTo(fields: ["manufacturerId"], references: ["id"])
+  temperatureCoefficientOfVOC: Float!
+  temperatureCoefficientOfISC: Float!
+  temperatureCoefficientOfPmax: Float!
+  stc: PanelCharacteristics @hasOne
+  noct: PanelCharacteristics @hasOne
+  nmot: PanelCharacteristics @hasOne
+}
+
+type PanelCharacteristics @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  maximumPower: Float!
+  openCircuitVoltage: Float!
+  shortCircuitCurrent: Float!
+  voltageAtMaximumPower: Float!
+  currentAtMaximumPower: Float!
+  solarPanelId: ID!
+  solarPanel: SolarPanel @belongsTo(fields: ["solarPanelId"], references: ["id"])
+} 

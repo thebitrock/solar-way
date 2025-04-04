@@ -19,11 +19,27 @@ export declare type SolarPanelCreateFormInputValues = {
     name?: string;
     vocSTC?: number;
     temperatureCoefficientOfVOC?: number;
+    temperatureCoefficientOfISC?: number;
+    temperatureCoefficientOfPmax?: number;
+    impSTC?: number;
+    vmpSTC?: number;
+    iscSTC?: number;
+    impNOCT?: number;
+    vmpNOCT?: number;
+    iscNOCT?: number;
 };
 export declare type SolarPanelCreateFormValidationValues = {
     name?: ValidationFunction<string>;
     vocSTC?: ValidationFunction<number>;
     temperatureCoefficientOfVOC?: ValidationFunction<number>;
+    temperatureCoefficientOfISC?: ValidationFunction<number>;
+    temperatureCoefficientOfPmax?: ValidationFunction<number>;
+    impSTC?: ValidationFunction<number>;
+    vmpSTC?: ValidationFunction<number>;
+    iscSTC?: ValidationFunction<number>;
+    impNOCT?: ValidationFunction<number>;
+    vmpNOCT?: ValidationFunction<number>;
+    iscNOCT?: ValidationFunction<number>;
 };
 export declare type PrimitiveOverrideProps<T> = Partial<T> & React.DOMAttributes<HTMLDivElement>;
 export declare type SolarPanelCreateFormOverridesProps = {
