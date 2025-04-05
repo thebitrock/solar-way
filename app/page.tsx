@@ -81,6 +81,7 @@ function ModuleSelector({ modules, selectedModuleId, onModuleSelect }: ModuleSel
 
 // Transform API data to client types
 const transformManufacturer = (data: any): Manufacturer => {
+  console.log('Raw manufacturer data:', data);
   return {
     id: data.id,
     name: data.name,
@@ -207,13 +208,27 @@ export default function Home() {
       try {
         console.log('Loading data...');
         
-        // Загружаем производителей
         const manufacturerResult = await client.models.Manufacturer.list();
-        console.log('Manufacturers loaded:', manufacturerResult.data);
-        setManufacturers(manufacturerResult.data.map(transformManufacturer));
-
-        // Загружаем солнечные панели
         const solarPanelResult = await client.models.SolarPanel.list();
+        const solarPanelsByManufacturerId: Record<string, any[]> = {};
+        solarPanelResult.data.forEach(panel => {
+          if (!solarPanelsByManufacturerId[panel.manufacturerId]) {
+            solarPanelsByManufacturerId[panel.manufacturerId] = [];
+          }
+          solarPanelsByManufacturerId[panel.manufacturerId].push(panel);
+        });
+
+        const transformedManufacturers = manufacturerResult.data.map(manufacturer => {
+          const manufacturerWithPanels = {
+            ...manufacturer,
+            solarPanels: {
+              items: solarPanelsByManufacturerId[manufacturer.id] || []
+            }
+          };
+          return transformManufacturer(manufacturerWithPanels);
+        });
+        
+        setManufacturers(transformedManufacturers);
         
         // Для каждой панели загружаем модули и их характеристики
         const transformedPanels = await Promise.all(
@@ -261,8 +276,35 @@ export default function Home() {
 
     // Подписка на обновления производителей
     const manufacturerSubscription = client.models.Manufacturer.observeQuery().subscribe({
-      next: ({ items }) => {
-        setManufacturers(items.map(transformManufacturer));
+      next: async ({ items }) => {
+        try {
+          // Загружаем солнечные панели
+          const solarPanelResult = await client.models.SolarPanel.list();
+          
+          // Создаем карту солнечных панелей по ID производителя
+          const solarPanelsByManufacturerId: Record<string, any[]> = {};
+          solarPanelResult.data.forEach(panel => {
+            if (!solarPanelsByManufacturerId[panel.manufacturerId]) {
+              solarPanelsByManufacturerId[panel.manufacturerId] = [];
+            }
+            solarPanelsByManufacturerId[panel.manufacturerId].push(panel);
+          });
+          
+          // Трансформируем производителей с их солнечными панелями
+          const transformedManufacturers = items.map(manufacturer => {
+            const manufacturerWithPanels = {
+              ...manufacturer,
+              solarPanels: {
+                items: solarPanelsByManufacturerId[manufacturer.id] || []
+              }
+            };
+            return transformManufacturer(manufacturerWithPanels);
+          });
+          
+          setManufacturers(transformedManufacturers);
+        } catch (error) {
+          console.error('Error updating manufacturers:', error);
+        }
       }
     });
 
@@ -694,29 +736,33 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {manufacturers.map((manufacturer) => (
-                  <tr key={manufacturer.id} style={{ borderBottom: '1px solid #e5e5e5' }}>
-                    <td style={{ padding: '0.75rem' }}>{manufacturer.name}</td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <Flex gap="0.5rem" justifyContent="flex-end">
-                        <Button size="small" onClick={() => {
-                          setSelectedManufacturer(manufacturer);
-                          setModalType('manufacturer');
-                          setIsModalOpen(true);
-                        }}>
-                          {t('modal.edit')}
-                        </Button>
-                        <Button 
-                          size="small" 
-                          variation="destructive" 
-                          onClick={() => handleDeleteManufacturer(manufacturer.id)}
-                        >
-                          {t('modal.delete')}
-                        </Button>
-                      </Flex>
-                    </td>
-                  </tr>
-                ))}
+                {manufacturers.map((manufacturer) => {
+                  return (
+                    <tr key={manufacturer.id} style={{ borderBottom: '1px solid #e5e5e5' }}>
+                      <td style={{ padding: '0.75rem' }}>{manufacturer.name}</td>
+                      <td style={{ padding: '0.75rem' }}>
+                        <Flex gap="0.5rem" justifyContent="flex-end">
+                          <Button size="small" onClick={() => {
+                            setSelectedManufacturer(manufacturer);
+                            setModalType('manufacturer');
+                            setIsModalOpen(true);
+                          }}>
+                            {t('modal.edit')}
+                          </Button>
+                          {manufacturer.solarPanels.length === 0 && (
+                            <Button 
+                              size="small" 
+                              variation="destructive" 
+                              onClick={() => handleDeleteManufacturer(manufacturer.id)}
+                            >
+                              {t('modal.delete')}
+                            </Button>
+                          )}
+                        </Flex>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </Flex>
