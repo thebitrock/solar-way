@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Amplify } from 'aws-amplify';
+import config from '@/amplifyconfiguration.json';
+import { Providers } from './components/Providers';
+
 import "./globals.css";
-import '@aws-amplify/ui-react/styles/reset.layer.css' // global CSS reset
-import '@aws-amplify/ui-react/styles/base.layer.css' // base styling needed for Amplify UI
-import '@aws-amplify/ui-react/styles/button.layer.css' // component specific styles
-import { LanguageProvider } from './contexts/LanguageContext';
+import '@aws-amplify/ui-react/styles.css';
+
+Amplify.configure(config);
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,6 +17,11 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const inter = Inter({ 
+  subsets: ['latin', 'cyrillic'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -27,13 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <LanguageProvider>
+    <html lang="uk" className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased`}>
+      <body>
+        <Providers>
           {children}
-        </LanguageProvider>
+        </Providers>
       </body>
     </html>
   );
