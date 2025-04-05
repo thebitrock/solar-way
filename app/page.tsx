@@ -351,7 +351,7 @@ export default function Home() {
 
     // Массив температур с шагом 5 градусов
     const temperatures = [];
-    for (let temp = minTemp; temp <= maxTemp; temp += 5) {
+    for (let temp = minTemp; temp <= maxTemp; temp += 1) {
       temperatures.push(temp);
     }
 
@@ -374,8 +374,7 @@ export default function Home() {
       let pmaxAtTempNMOT = undefined;
 
       if (noct) {
-        // NOCT обычно измеряется при 45-48°C
-        const noctTemp = 45;
+        const noctTemp = 20;
         const deltaTNoct = temp - noctTemp;
         vocAtTempNOCT = noct.openCircuitVoltage * (1 + tempCoeffVoc * deltaTNoct);
         iscAtTempNOCT = noct.shortCircuitCurrent * (1 + tempCoeffIsc * deltaTNoct);
@@ -383,8 +382,7 @@ export default function Home() {
       }
 
       if (nmot) {
-        // NMOT обычно измеряется при 45-48°C, как и NOCT
-        const nmotTemp = 45;
+        const nmotTemp = 20;
         const deltaTNmot = temp - nmotTemp;
         vocAtTempNMOT = nmot.openCircuitVoltage * (1 + tempCoeffVoc * deltaTNmot);
         iscAtTempNMOT = nmot.shortCircuitCurrent * (1 + tempCoeffIsc * deltaTNmot);

@@ -48,6 +48,8 @@ export default function VoltageTable({ voltages, mpptMaxVDC, translations }: Vol
 
   return (
     <Card>
+      NMOT: 800 W/m², Ambient Temperature 20°C<br/>
+      STC: 1000 W/m², Ambient Temperature 25°C
       <Table>
         <TableHead>
           <TableRow>
