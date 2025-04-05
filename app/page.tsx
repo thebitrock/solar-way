@@ -831,6 +831,12 @@ export default function Home() {
         }}
         isOpen={isModalOpen}
         type={modalType}
+        onSubmit={() => {
+          const formSubmitButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+          if (formSubmitButton) {
+            formSubmitButton.click();
+          }
+        }}
       >
         {modalType === 'manufacturer' ? (
           <ManufacturerForm

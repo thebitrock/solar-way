@@ -113,8 +113,8 @@ function ModuleForm({
 
   return (
     <Flex direction="column" gap="1rem">
-      <Flex direction="row" justifyContent="space-between" alignItems="center">
-        <Flex direction="column" gap="0.5rem" width="100%">
+      <Grid templateColumns="1fr auto" gap="1rem" alignItems="flex-start">
+        <Flex direction="column" gap="0.5rem">
           <Label htmlFor="power">{t('solarPanels.modulePower')}</Label>
           <Input
             id="power"
@@ -127,11 +127,11 @@ function ModuleForm({
           {errors?.power && <Text variation="error">{errors.power}</Text>}
         </Flex>
         {onDelete && (
-          <Button variation="destructive" onClick={onDelete} marginLeft="1rem">
+          <Button variation="destructive" onClick={onDelete} style={{ marginTop: '32px' }}>
             {t('solarPanels.delete')}
           </Button>
         )}
-      </Flex>
+      </Grid>
 
       <Divider />
 
@@ -751,7 +751,10 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
   }
 
   return (
-    <Flex direction="column" gap="1.5rem">
+    <Flex direction="column" gap="1.5rem" as="form" onSubmit={(e) => {
+      e.preventDefault();
+      handleSubmit();
+    }}>
       <Flex direction="column" gap="0.5rem">
         <Label htmlFor="name">{t('solarPanels.name')}</Label>
         <Input
@@ -862,11 +865,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
         )}
       </Flex>
 
-      <Flex direction="row" gap="1rem">
-        <Button variation="primary" onClick={handleSubmit}>
-          {solarPanel ? t('solarPanels.update') : t('solarPanels.create')}
-        </Button>
-      </Flex>
+      <button type="submit" style={{ display: 'none' }}></button>
     </Flex>
   );
 } 

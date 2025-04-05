@@ -69,6 +69,7 @@ export interface SolarPanelFormProps {
   solarPanel?: SolarPanelModel;
   mode: 'create' | 'update';
   onSuccess: () => void;
+  onSubmit?: () => void;
 }
 
 // Создаем клиентский компонент с отключенным SSR

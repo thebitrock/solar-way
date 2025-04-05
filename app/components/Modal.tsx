@@ -10,9 +10,10 @@ interface ModalProps {
   children: React.ReactNode;
   title: string;
   type?: 'manufacturer' | 'solarPanel';
+  onSubmit?: () => void;
 }
 
-export default function Modal({ isOpen, onClose, children, title, type }: ModalProps) {
+export default function Modal({ isOpen, onClose, children, title, type, onSubmit }: ModalProps) {
   const t = useTranslation();
 
   useEffect(() => {
@@ -37,16 +38,31 @@ export default function Modal({ isOpen, onClose, children, title, type }: ModalP
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <Card className="w-full max-w-4xl mx-auto my-8 min-h-[60vh]">
-        <Flex direction="column" gap="1.5rem">
-          <Flex justifyContent="space-between" alignItems="center" className="px-2">
+      <Card className="w-full max-w-4xl mx-auto my-8 flex flex-col">
+        <Flex direction="column" className="h-[80vh]">
+          {/* Header */}
+          <Flex justifyContent="space-between" alignItems="center" className="px-4 py-3 border-b">
             <h2 className="text-2xl font-bold">{title}</h2>
             <Button onClick={onClose} variation="link">
               {t('modal.close')}
             </Button>
           </Flex>
-          <div className="max-h-[80vh] overflow-y-auto px-2">
+          
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto px-4 py-4">
             {children}
+          </div>
+          
+          {/* Footer */}
+          <div className="px-4 py-3 border-t bg-white">
+            <Flex justifyContent="flex-end" gap="1rem">
+              <Button variation="link" onClick={onClose}>
+                {t('solarPanels.cancel')}
+              </Button>
+              <Button variation="primary" onClick={onSubmit}>
+                {type === 'manufacturer' ? t('manufacturers.update') : t('solarPanels.update')}
+              </Button>
+            </Flex>
           </div>
         </Flex>
       </Card>
