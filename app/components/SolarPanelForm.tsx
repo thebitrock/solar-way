@@ -1,6 +1,24 @@
 import dynamic from 'next/dynamic';
 import { Flex } from '@aws-amplify/ui-react';
 
+export type ModuleModel = {
+  id?: string;
+  power: number;
+  solarPanelId?: string;
+  characteristics?: Array<CharacteristicModel>;
+};
+
+export type CharacteristicModel = {
+  id?: string;
+  type: 'STC' | 'NOCT' | 'NMOT';
+  maximumPower: number;
+  openCircuitVoltage: number;
+  shortCircuitCurrent: number;
+  voltageAtMaximumPower: number;
+  currentAtMaximumPower: number;
+  moduleId?: string;
+};
+
 export type SolarPanelModel = {
   id?: string;
   name: string;
@@ -8,15 +26,7 @@ export type SolarPanelModel = {
   temperatureCoefficientOfVOC: number;
   temperatureCoefficientOfISC: number;
   temperatureCoefficientOfPmax: number;
-  characteristics?: Array<{
-    id: string;
-    type: string;
-    maximumPower: number;
-    openCircuitVoltage: number;
-    shortCircuitCurrent: number;
-    voltageAtMaximumPower: number;
-    currentAtMaximumPower: number;
-  }>;
+  modules?: Array<ModuleModel>;
 };
 
 export type ManufacturerModel = {
@@ -32,9 +42,26 @@ export interface PanelCharacteristicsInput {
   currentAtMaximumPower: string;
 }
 
+export interface ModuleInput {
+  id?: string;
+  power: string;
+  characteristics: {
+    stc: PanelCharacteristicsInput;
+    noct: PanelCharacteristicsInput;
+    nmot: PanelCharacteristicsInput;
+  };
+}
+
 export interface CharacteristicsFormProps {
   characteristics: PanelCharacteristicsInput;
   onChange: (characteristics: PanelCharacteristicsInput) => void;
+  t: (key: string) => string;
+}
+
+export interface ModuleFormProps {
+  module: ModuleInput;
+  onChange: (module: ModuleInput) => void;
+  onDelete?: () => void;
   t: (key: string) => string;
 }
 
@@ -43,16 +70,6 @@ export interface SolarPanelFormProps {
   mode: 'create' | 'update';
   onSuccess: () => void;
 }
-
-export type Characteristic = {
-  id: string;
-  type: string;
-  maximumPower: number;
-  openCircuitVoltage: number;
-  shortCircuitCurrent: number;
-  voltageAtMaximumPower: number;
-  currentAtMaximumPower: number;
-};
 
 // Создаем клиентский компонент с отключенным SSR
 const SolarPanelFormClient = dynamic(

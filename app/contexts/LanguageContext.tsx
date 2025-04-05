@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type Language = 'uk' | 'en';
 
@@ -9,9 +9,9 @@ interface LanguageContextType {
   toggleLanguage: () => void;
 }
 
-const LANGUAGE_KEY = 'solar-way-language';
-
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+const LANGUAGE_KEY = 'solar-way-language';
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
@@ -46,10 +46,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useLanguage() {
+export function useLanguageContext() {
   const context = useContext(LanguageContext);
   if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    throw new Error('useLanguageContext must be used within a LanguageProvider');
   }
   return context;
 } 

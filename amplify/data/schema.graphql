@@ -12,6 +12,14 @@ type SolarPanel @model @auth(rules: [{ allow: public }]) {
   temperatureCoefficientOfVOC: Float!
   temperatureCoefficientOfISC: Float!
   temperatureCoefficientOfPmax: Float!
+  modules: [Module] @hasMany
+}
+
+type Module @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  power: Float!
+  solarPanelId: ID!
+  solarPanel: SolarPanel @belongsTo(fields: ["solarPanelId"], references: ["id"])
   stc: PanelCharacteristics @hasOne
   noct: PanelCharacteristics @hasOne
   nmot: PanelCharacteristics @hasOne
@@ -24,6 +32,7 @@ type PanelCharacteristics @model @auth(rules: [{ allow: public }]) {
   shortCircuitCurrent: Float!
   voltageAtMaximumPower: Float!
   currentAtMaximumPower: Float!
-  solarPanelId: ID!
-  solarPanel: SolarPanel @belongsTo(fields: ["solarPanelId"], references: ["id"])
+  moduleId: ID!
+  module: Module @belongsTo(fields: ["moduleId"], references: ["id"])
+  type: String!
 } 

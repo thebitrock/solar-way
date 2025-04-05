@@ -4,34 +4,36 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, Flex, Input, Label, Text } from '@aws-amplify/ui-react';
 
 interface AutocompleteProps<T> {
-  items: T[];
+  options: T[];
   value: string;
   onChange: (value: string) => void;
   onSelect: (item: T) => void;
-  getLabel: (item: T) => string;
+  getOptionLabel: (item: T) => string;
   placeholder?: string;
   label?: string;
+  id?: string;
 }
 
 export default function Autocomplete<T>({
-  items,
+  options,
   value,
   onChange,
   onSelect,
-  getLabel,
+  getOptionLabel,
   placeholder,
-  label
+  label,
+  id
 }: AutocompleteProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredItems, setFilteredItems] = useState<T[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const filtered = items.filter(item =>
-      getLabel(item).toLowerCase().includes(value.toLowerCase())
+    const filtered = options.filter(item =>
+      getOptionLabel(item).toLowerCase().includes(value.toLowerCase())
     );
     setFilteredItems(filtered);
-  }, [items, value, getLabel]);
+  }, [options, value, getOptionLabel]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -50,6 +52,7 @@ export default function Autocomplete<T>({
     <div ref={wrapperRef} className="relative">
       {label && <Label>{label}</Label>}
       <Input
+        id={id}
         type="text"
         value={value}
         onChange={(e) => {
@@ -68,11 +71,11 @@ export default function Autocomplete<T>({
                 className="px-4 py-2 text-left hover:bg-gray-100"
                 onClick={() => {
                   onSelect(item);
-                  onChange(getLabel(item));
+                  onChange(getOptionLabel(item));
                   setIsOpen(false);
                 }}
               >
-                <Text>{getLabel(item)}</Text>
+                <Text>{getOptionLabel(item)}</Text>
               </button>
             ))}
           </Flex>

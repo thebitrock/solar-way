@@ -14,9 +14,14 @@ export const translations = {
       addSolarPanel: 'Додати сонячну панель',
       editSolarPanel: 'Редагувати сонячну панель',
       addManufacturer: 'Додати виробника',
-      editManufacturer: 'Редагувати виробника'
+      editManufacturer: 'Редагувати виробника',
+      edit: 'Редагувати',
+      delete: 'Видалити'
     },
+    actions: 'Дії',
     calculation: {
+      selectSolarPanel: 'Виберіть сонячну панель',
+      chooseSolarPanel: 'Виберіть панель зі списку',
       selectPanel: 'Виберіть сонячну панель',
       selectPanelPlaceholder: 'Виберіть панель зі списку',
       panelCount: 'Кількість панелей у стрингі',
@@ -81,7 +86,10 @@ export const translations = {
         temperatureCoefficientOfISC: 'Температурний коефіцієнт Isc',
         temperatureCoefficientOfVOC: 'Температурний коефіцієнт Voc',
         temperatureCoefficientOfPmax: 'Температурний коефіцієнт Pmax'
-      }
+      },
+      selectModule: 'Оберіть модуль',
+      selectModulePlaceholder: 'Оберіть модуль зі списку',
+      modulePower: 'Потужність модуля'
     },
     manufacturers: {
       name: 'Назва виробника',
@@ -117,11 +125,22 @@ export const translations = {
       cancel: 'Скасувати',
       temperatureCoefficientOfISC: 'Температурний коефіцієнт Isc',
       temperatureCoefficientOfVOC: 'Температурний коефіцієнт Voc',
-      temperatureCoefficientOfPmax: 'Температурний коефіцієнт Pmax'
+      temperatureCoefficientOfPmax: 'Температурний коефіцієнт Pmax',
+      module: 'Модуль',
+      modules: 'Модулі',
+      addModule: 'Додати модуль',
+      delete: 'Видалити',
+      moduleCount: 'Кількість модулів',
+      modulePower: 'Потужність модуля (W)',
+      modulePowerPlaceholder: 'Введіть потужність модуля',
+      newModule: 'Новий модуль'
     },
     errors: {
       required: 'Це поле обов\'язкове',
-      unknown: 'Сталася невідома помилка'
+      unknown: 'Сталася невідома помилка',
+      moduleRequired: 'Необхідно додати хоча б один модуль',
+      modulePowerRequired: 'Необхідно вказати потужність для всіх модулів',
+      moduleNotAvailable: 'API модуля недоступне. Будь ласка, оновіть сторінку і спробуйте знову'
     }
   },
   en: {
@@ -139,9 +158,14 @@ export const translations = {
       addSolarPanel: 'Add solar panel',
       editSolarPanel: 'Edit solar panel',
       addManufacturer: 'Add manufacturer',
-      editManufacturer: 'Edit manufacturer'
+      editManufacturer: 'Edit manufacturer',
+      edit: 'Edit',
+      delete: 'Delete'
     },
+    actions: 'Actions',
     calculation: {
+      selectSolarPanel: 'Select solar panel',
+      chooseSolarPanel: 'Choose a panel from the list',
       selectPanel: 'Select solar panel',
       selectPanelPlaceholder: 'Select a panel from the list',
       panelCount: 'Number of panels in string',
@@ -184,13 +208,13 @@ export const translations = {
       temperatureRange: 'Temperature range',
       minTemp: 'Minimum temperature',
       maxTemp: 'Maximum temperature',
-      openCircuitVoltage: 'Open Circuit Voltage',
-      shortCircuitCurrent: 'Short Circuit Current',
-      maximumPower: 'Maximum Power',
+      openCircuitVoltage: 'Open circuit voltage',
+      shortCircuitCurrent: 'Short circuit current',
+      maximumPower: 'Maximum power',
       totalPowerSTC: 'Total power at STC',
       totalPowerNOCT: 'Total power at NOCT',
       totalPowerNMOT: 'Total power at NMOT',
-      mpptMaxVDC: 'Maximum MPPT Voltage',
+      mpptMaxVDC: 'Maximum MPPT voltage',
       unknownPanel: 'Unknown panel',
       unknownManufacturer: 'Unknown manufacturer',
       notProvided: 'Not provided',
@@ -198,15 +222,18 @@ export const translations = {
       impNOCT: 'Current at Maximum Power (Imp/A) NOCT',
       vmpNOCT: 'Voltage at Maximum Power (Vmp/V) NOCT',
       iscNOCT: 'Short Circuit Current (Isc/A) NOCT',
-      openCircuitVoltageNOCT: 'Open Circuit Voltage',
-      shortCircuitCurrentNOCT: 'Short Circuit Current',
-      maximumPowerNOCT: 'Maximum Power',
+      openCircuitVoltageNOCT: 'Open circuit voltage',
+      shortCircuitCurrentNOCT: 'Short circuit current',
+      maximumPowerNOCT: 'Maximum power',
       totalPower: 'Total power',
       solarPanels: {
-        temperatureCoefficientOfISC: 'Temperature Coefficient of Isc',
-        temperatureCoefficientOfVOC: 'Temperature Coefficient of Voc',
-        temperatureCoefficientOfPmax: 'Temperature Coefficient of Pmax'
-      }
+        temperatureCoefficientOfISC: 'Temperature coefficient of Isc',
+        temperatureCoefficientOfVOC: 'Temperature coefficient of Voc',
+        temperatureCoefficientOfPmax: 'Temperature coefficient of Pmax'
+      },
+      selectModule: 'Select module',
+      selectModulePlaceholder: 'Select a module from the list',
+      modulePower: 'Module power'
     },
     manufacturers: {
       name: 'Manufacturer name',
@@ -236,142 +263,28 @@ export const translations = {
       name: 'Panel name',
       namePlaceholder: 'Enter panel name',
       selectManufacturer: 'Select manufacturer',
-      chooseManufacturer: 'Choose manufacturer',
+      chooseManufacturer: 'Choose a manufacturer',
       create: 'Create solar panel',
       update: 'Update solar panel',
       cancel: 'Cancel',
-      temperatureCoefficientOfISC: 'Temperature Coefficient of Isc',
-      temperatureCoefficientOfVOC: 'Temperature Coefficient of Voc',
-      temperatureCoefficientOfPmax: 'Temperature Coefficient of Pmax'
+      temperatureCoefficientOfISC: 'Temperature coefficient of Isc',
+      temperatureCoefficientOfVOC: 'Temperature coefficient of Voc',
+      temperatureCoefficientOfPmax: 'Temperature coefficient of Pmax',
+      module: 'Module',
+      modules: 'Modules',
+      addModule: 'Add module',
+      delete: 'Delete',
+      moduleCount: 'Number of modules',
+      modulePower: 'Module power (W)',
+      modulePowerPlaceholder: 'Enter module power',
+      newModule: 'New module'
     },
     errors: {
       required: 'This field is required',
-      unknown: 'An unknown error occurred'
-    }
-  },
-  ru: {
-    title: 'Калькулятор строки солнечных панелей',
-    common: {
-      loading: 'Загрузка...'
-    },
-    tabs: {
-      calculation: 'Расчет напряжения',
-      manufacturers: 'Производители',
-      solarPanels: 'Солнечные панели'
-    },
-    modal: {
-      close: 'Закрыть',
-      addSolarPanel: 'Добавить солнечную панель',
-      editSolarPanel: 'Редактировать солнечную панель',
-      addManufacturer: 'Добавить производителя',
-      editManufacturer: 'Редактировать производителя'
-    },
-    calculation: {
-      selectPanel: 'Выберите солнечную панель',
-      selectPanelPlaceholder: 'Выберите панель из списка',
-      panelCount: 'Количество панелей в строке',
-      addPanel: 'Добавить солнечную панель',
-      panelInfo: 'Параметры выбранной панели',
-      panelParameters: {
-        title: 'Параметры панели',
-        temperatureCoefficients: 'Температурные характеристики (STC)',
-        temperatureCoefficients_isc: 'Температурный коэффициент Isc',
-        temperatureCoefficients_voc: 'Температурный коэффициент Voc',
-        temperatureCoefficients_pmax: 'Температурный коэффициент Pmax',
-        vocCoefficient: 'Voc: %/°C',
-        iscCoefficient: 'Isc: %/°C',
-        pmaxCoefficient: 'Pmax: %/°C'
-      },
-      characteristics: {
-        title: 'Характеристики панели',
-        parameters: 'Параметры',
-        stc: 'STC',
-        noct: 'NOCT',
-        nmot: 'NMOT',
-        pmax: 'Максимальная мощность (Pmax/W)',
-        voc: 'Напряжение холостого хода (Voc/V)',
-        isc: 'Ток короткого замыкания (Isc/A)',
-        vmp: 'Напряжение при максимальной мощности (Vmp/V)',
-        imp: 'Ток при максимальной мощности (Imp/A)'
-      },
-      name: 'Название:',
-      manufacturer: 'Производитель:',
-      vocSTC: 'Voc STC:',
-      vocNOCT: 'Voc NOCT:',
-      temperatureCoefficient: 'Температурный коэффициент Voc:',
-      temperatureCoefficientISC: 'Температурный коэффициент Isc:',
-      temperatureCoefficientPmax: 'Температурный коэффициент Pmax:',
-      impSTC: 'Ток при максимальной мощности (Imp/A) STC:',
-      vmpSTC: 'Напряжение при максимальной мощности (Vmp/V) STC:',
-      iscSTC: 'Ток короткого замыкания (Isc/A) STC:',
-      totalVoltage: 'Общее напряжение:',
-      temperature: 'Температура (°C)',
-      temperatureRange: 'Диапазон температур',
-      minTemp: 'Минимальная температура',
-      maxTemp: 'Максимальная температура',
-      openCircuitVoltage: 'Напряжение холостого хода',
-      shortCircuitCurrent: 'Ток короткого замыкания',
-      maximumPower: 'Максимальная мощность',
-      totalPowerSTC: 'Общая мощность при STC',
-      totalPowerNOCT: 'Общая мощность при NOCT',
-      totalPowerNMOT: 'Общая мощность при NMOT',
-      mpptMaxVDC: 'Максимально допустимое напряжение MPPT',
-      unknownPanel: 'Неизвестная панель',
-      unknownManufacturer: 'Неизвестный производитель',
-      notProvided: 'Не предоставлено',
-      requiredField: '* Обязательное поле',
-      impNOCT: 'Ток при максимальной мощности (Imp/A) NOCT',
-      vmpNOCT: 'Напряжение при максимальной мощности (Vmp/V) NOCT',
-      iscNOCT: 'Ток короткого замыкания (Isc/A) NOCT',
-      openCircuitVoltageNOCT: 'Напряжение холостого хода',
-      shortCircuitCurrentNOCT: 'Ток короткого замыкания',
-      maximumPowerNOCT: 'Максимальная мощность',
-      totalPower: 'Общая мощность',
-      solarPanels: {
-        temperatureCoefficientOfISC: 'Температурный коэффициент Isc',
-        temperatureCoefficientOfVOC: 'Температурный коэффициент Voc',
-        temperatureCoefficientOfPmax: 'Температурный коэффициент Pmax'
-      }
-    },
-    manufacturers: {
-      name: 'Название производителя',
-      namePlaceholder: 'Введите название производителя',
-      create: 'Создать производителя',
-      update: 'Обновить производителя',
-      cancel: 'Отменить',
-      creating: 'Создание...',
-      updating: 'Обновление...'
-    },
-    solarPanels: {
-      characteristics: {
-        stc: 'Стандартные условия испытания (STC)',
-        noct: 'Номинальная рабочая температура (NOCT)',
-        nmot: 'Номинальная рабочая температура модуля (NMOT)'
-      },
-      maximumPower: 'Максимальная мощность (Pmax/W)',
-      maximumPowerPlaceholder: 'Введите максимальную мощность (W)',
-      openCircuitVoltage: 'Напряжение холостого хода (Voc/V)',
-      openCircuitVoltagePlaceholder: 'Введите напряжение холостого хода (V)',
-      shortCircuitCurrent: 'Ток короткого замыкания (Isc/A)',
-      shortCircuitCurrentPlaceholder: 'Введите ток короткого замыкания (A)',
-      voltageAtMaximumPower: 'Напряжение при максимальной мощности (Vmp/V)',
-      voltageAtMaximumPowerPlaceholder: 'Введите напряжение при максимальной мощности (V)',
-      currentAtMaximumPower: 'Ток при максимальной мощности (Imp/A)',
-      currentAtMaximumPowerPlaceholder: 'Введите ток при максимальной мощности (A)',
-      name: 'Название панели',
-      namePlaceholder: 'Введите название панели',
-      selectManufacturer: 'Выберите производителя',
-      chooseManufacturer: 'Выберите производителя',
-      create: 'Создать солнечную панель',
-      update: 'Обновить солнечную панель',
-      cancel: 'Отменить',
-      temperatureCoefficientOfISC: 'Температурный коэффициент Isc',
-      temperatureCoefficientOfVOC: 'Температурный коэффициент Voc',
-      temperatureCoefficientOfPmax: 'Температурный коэффициент Pmax'
-    },
-    errors: {
-      required: 'Это поле обязательно',
-      unknown: 'Произошла неизвестная ошибка'
+      unknown: 'An unknown error occurred',
+      moduleRequired: 'At least one module is required',
+      modulePowerRequired: 'Power must be specified for all modules',
+      moduleNotAvailable: 'Module API is not available. Please refresh the page and try again'
     }
   }
 }; 

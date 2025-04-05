@@ -1,25 +1,27 @@
 'use client';
 
-import { useLanguage } from './useLanguage';
+import { useMemo } from 'react';
 import { translations } from '../i18n/translations';
+import { useLanguageContext } from '../contexts/LanguageContext';
 
-type TranslationFunction = (key: string) => string;
+export function useTranslation() {
+  const { language } = useLanguageContext();
 
-export function useTranslation(): TranslationFunction {
-  const { language } = useLanguage();
+  // Используем useMemo для создания функции перевода, которая будет пересоздаваться при изменении языка
+  return useMemo(() => {
+    return (key: string): string => {
+      const keys = key.split('.');
+      let value: any = translations[language];
 
-  return (key: string): string => {
-    const keys = key.split('.');
-    let value: any = translations[language];
-
-    for (const k of keys) {
-      if (value && typeof value === 'object') {
-        value = value[k];
-      } else {
-        return key;
+      for (const k of keys) {
+        if (value && typeof value === 'object') {
+          value = value[k];
+        } else {
+          return key;
+        }
       }
-    }
 
-    return typeof value === 'string' ? value : key;
-  };
+      return typeof value === 'string' ? value : key;
+    };
+  }, [language]);
 } 

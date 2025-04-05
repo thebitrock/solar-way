@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import { Button, Card, Flex, Input, Label, SelectField, Text } from '@aws-amplify/ui-react';
+import { Button, Card, Flex, Input, Label, SelectField, Text, Heading, Divider, Grid, Tabs } from '@aws-amplify/ui-react';
 import { useTranslation } from '../hooks/useTranslation';
 import { Schema } from '@/amplify/data/resource';
-import { SolarPanelFormProps, PanelCharacteristicsInput } from './SolarPanelForm';
+import { SolarPanelFormProps, PanelCharacteristicsInput, ModuleInput } from './SolarPanelForm';
 
 function CharacteristicsForm({ 
   characteristics, 
@@ -16,6 +16,7 @@ function CharacteristicsForm({
   onChange: (value: PanelCharacteristicsInput) => void; 
   t: (key: string) => string; 
 }) {
+  console.log('Rendering CharacteristicsForm with characteristics:', characteristics);
   return (
     <Flex direction="column" gap="1rem">
       <Flex direction="column" gap="0.5rem">
@@ -72,12 +73,125 @@ function CharacteristicsForm({
   );
 }
 
+function ModuleForm({
+  module,
+  onChange,
+  onDelete,
+  t
+}: {
+  module: ModuleInput;
+  onChange: (module: ModuleInput) => void;
+  onDelete?: () => void;
+  t: (key: string) => string;
+}) {
+  const [activeTab, setActiveTab] = useState<'stc' | 'noct' | 'nmot'>('stc');
+
+  const handleTabChange = (e: FormEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const value = target.getAttribute('data-value');
+    if (value === 'stc' || value === 'noct' || value === 'nmot') {
+      setActiveTab(value);
+    }
+  };
+
+  return (
+    <Flex direction="column" gap="1rem">
+      <Flex direction="row" justifyContent="space-between" alignItems="center">
+        <Flex direction="column" gap="0.5rem" width="100%">
+          <Label htmlFor="power">{t('solarPanels.modulePower')}</Label>
+          <Input
+            id="power"
+            type="number"
+            value={module.power}
+            onChange={(e) => onChange({ ...module, power: e.target.value })}
+            placeholder={t('solarPanels.modulePowerPlaceholder')}
+          />
+        </Flex>
+        {onDelete && (
+          <Button variation="destructive" onClick={onDelete} marginLeft="1rem">
+            {t('solarPanels.delete')}
+          </Button>
+        )}
+      </Flex>
+
+      <Divider />
+
+      <Tabs
+        spacing="equal"
+        items={[
+          {
+            value: 'stc',
+            label: t('solarPanels.characteristics.stc'),
+            content: (
+              <CharacteristicsForm
+                characteristics={module.characteristics.stc}
+                onChange={(value) => onChange({
+                  ...module,
+                  characteristics: {
+                    ...module.characteristics,
+                    stc: value
+                  }
+                })}
+                t={t}
+              />
+            )
+          },
+          {
+            value: 'noct',
+            label: t('solarPanels.characteristics.noct'),
+            content: (
+              <CharacteristicsForm
+                characteristics={module.characteristics.noct}
+                onChange={(value) => onChange({
+                  ...module,
+                  characteristics: {
+                    ...module.characteristics,
+                    noct: value
+                  }
+                })}
+                t={t}
+              />
+            )
+          },
+          {
+            value: 'nmot',
+            label: t('solarPanels.characteristics.nmot'),
+            content: (
+              <CharacteristicsForm
+                characteristics={module.characteristics.nmot}
+                onChange={(value) => onChange({
+                  ...module,
+                  characteristics: {
+                    ...module.characteristics,
+                    nmot: value
+                  }
+                })}
+                t={t}
+              />
+            )
+          }
+        ]}
+        onChange={handleTabChange}
+      />
+    </Flex>
+  );
+}
+
 const emptyCharacteristics: PanelCharacteristicsInput = {
   maximumPower: '',
   openCircuitVoltage: '',
   shortCircuitCurrent: '',
   voltageAtMaximumPower: '',
   currentAtMaximumPower: '',
+};
+
+const emptyModule: ModuleInput = {
+  power: '',
+  characteristics: {
+    stc: { ...emptyCharacteristics },
+    noct: { ...emptyCharacteristics },
+    nmot: { ...emptyCharacteristics },
+  }
 };
 
 export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPanelFormProps) {
@@ -96,19 +210,20 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
     solarPanel?.temperatureCoefficientOfPmax?.toString() || '0'
   );
   const [manufacturers, setManufacturers] = useState<Array<{ id: string; name: string }>>([]);
+  const [modules, setModules] = useState<ModuleInput[]>([]);
+  const [activeModuleIndex, setActiveModuleIndex] = useState('0');
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('stc');
   const [isLoading, setIsLoading] = useState(true);
 
-  const [characteristics, setCharacteristics] = useState<{
-    stc: PanelCharacteristicsInput;
-    noct: PanelCharacteristicsInput;
-    nmot: PanelCharacteristicsInput;
-  }>({
-    stc: { ...emptyCharacteristics },
-    noct: { ...emptyCharacteristics },
-    nmot: { ...emptyCharacteristics },
-  });
+  const handleModuleTabChange = (e: FormEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const value = target.getAttribute('data-value') || '0';
+    setActiveModuleIndex(value);
+  };
+
+  useEffect(() => {
+    console.log('Current activeModuleIndex:', activeModuleIndex);
+  }, [activeModuleIndex]);
 
   useEffect(() => {
     let mounted = true;
@@ -125,41 +240,93 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
           setManufacturers(manufacturersResult.data);
         }
 
-        // Если редактируем панель, загружаем характеристики
+        // Если редактируем панель, загружаем модули и их характеристики
         if (solarPanel?.id) {
-          const characteristicsResult = await client.models.PanelCharacteristics.list({
-            filter: { solarPanelId: { eq: solarPanel.id } }
-          });
+          // Проверяем, есть ли доступ к модели Module
+          if (!client.models.Module) {
+            console.warn('Module model is not available yet in SolarPanelFormClient');
+            setIsLoading(false);
+            return;
+          }
 
-          if (!mounted) return;
-
-          if (characteristicsResult.data) {
-            const newCharacteristics = { ...characteristics };
-
-            characteristicsResult.data.forEach((char: any) => {
-              const data = {
-                maximumPower: char.maximumPower.toString(),
-                openCircuitVoltage: char.openCircuitVoltage.toString(),
-                shortCircuitCurrent: char.shortCircuitCurrent.toString(),
-                voltageAtMaximumPower: char.voltageAtMaximumPower.toString(),
-                currentAtMaximumPower: char.currentAtMaximumPower.toString(),
-              };
-
-              switch (char.type) {
-                case 'STC':
-                  newCharacteristics.stc = data;
-                  break;
-                case 'NOCT':
-                  newCharacteristics.noct = data;
-                  break;
-                case 'NMOT':
-                  newCharacteristics.nmot = data;
-                  break;
-              }
+          try {
+            const modulesResult = await client.models.Module.list({
+              filter: { solarPanelId: { eq: solarPanel.id } }
             });
 
-            setCharacteristics(newCharacteristics);
+            if (!mounted) return;
+
+            if (modulesResult.data && modulesResult.data.length > 0) {
+              const loadedModules: ModuleInput[] = [];
+
+              for (const module of modulesResult.data) {
+                // Проверяем, есть ли доступ к модели PanelCharacteristics
+                if (!client.models.PanelCharacteristics) {
+                  console.warn('PanelCharacteristics model is not available yet in SolarPanelFormClient');
+                  continue;
+                }
+
+                try {
+                  const characteristicsResult = await client.models.PanelCharacteristics.list({
+                    filter: { moduleId: { eq: module.id } }
+                  });
+
+                  if (!mounted) return;
+
+                  const moduleInput: ModuleInput = {
+                    id: module.id,
+                    power: module.power.toString(),
+                    characteristics: {
+                      stc: { ...emptyCharacteristics },
+                      noct: { ...emptyCharacteristics },
+                      nmot: { ...emptyCharacteristics },
+                    }
+                  };
+
+                  if (characteristicsResult.data) {
+                    characteristicsResult.data.forEach((char: any) => {
+                      const data = {
+                        maximumPower: char.maximumPower.toString(),
+                        openCircuitVoltage: char.openCircuitVoltage.toString(),
+                        shortCircuitCurrent: char.shortCircuitCurrent.toString(),
+                        voltageAtMaximumPower: char.voltageAtMaximumPower.toString(),
+                        currentAtMaximumPower: char.currentAtMaximumPower.toString(),
+                      };
+
+                      switch (char.type) {
+                        case 'STC':
+                          moduleInput.characteristics.stc = data;
+                          break;
+                        case 'NOCT':
+                          moduleInput.characteristics.noct = data;
+                          break;
+                        case 'NMOT':
+                          moduleInput.characteristics.nmot = data;
+                          break;
+                      }
+                    });
+                  }
+
+                  loadedModules.push(moduleInput);
+                } catch (err) {
+                  console.error('Error loading characteristics for module:', err);
+                  // Продолжаем обработку других модулей даже при ошибке с одним из них
+                }
+              }
+
+              setModules(loadedModules);
+            } else {
+              // Если нет модулей, добавляем пустой модуль по умолчанию
+              setModules([{ ...emptyModule }]);
+            }
+          } catch (err) {
+            console.error('Error loading modules for panel:', err);
+            // При ошибке загрузки модулей добавляем пустой модуль
+            setModules([{ ...emptyModule }]);
           }
+        } else {
+          // Для новой панели добавляем пустой модуль
+          setModules([{ ...emptyModule }]);
         }
       } catch (error) {
         if (!mounted) return;
@@ -193,13 +360,16 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
         return;
       }
 
-      // Проверяем, что хотя бы одна характеристика заполнена полностью
-      const hasStc = Object.values(characteristics.stc).every(value => value !== '');
-      const hasNoct = Object.values(characteristics.noct).every(value => value !== '');
-      const hasNmot = Object.values(characteristics.nmot).every(value => value !== '');
+      // Проверяем, что есть хотя бы один модуль
+      if (modules.length === 0) {
+        setError(t('errors.moduleRequired'));
+        return;
+      }
 
-      if (!hasStc && !hasNoct && !hasNmot) {
-        setError(t('errors.characteristicsRequired'));
+      // Проверяем, что все модули имеют мощность
+      const invalidModules = modules.filter(module => !module.power);
+      if (invalidModules.length > 0) {
+        setError(t('errors.modulePowerRequired'));
         return;
       }
 
@@ -223,17 +393,61 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
         if (!result.data) throw new Error('Failed to update panel');
         panelId = solarPanel.id;
 
-        // Удаляем все существующие характеристики
-        const existingCharacteristics = await client.models.PanelCharacteristics.list({
-          filter: { solarPanelId: { eq: panelId } }
-        });
+        // Проверяем, есть ли доступ к модели Module
+        if (!client.models.Module) {
+          console.warn('Module model is not available yet in handleSubmit');
+          setError(t('errors.moduleNotAvailable'));
+          return;
+        }
 
-        if (existingCharacteristics.data) {
-          await Promise.all(
-            existingCharacteristics.data.map(char => 
-              client.models.PanelCharacteristics.delete({ id: char.id })
-            )
-          );
+        // Получаем список существующих модулей
+        try {
+          const existingModules = await client.models.Module.list({
+            filter: { solarPanelId: { eq: panelId } }
+          });
+
+          if (existingModules.data) {
+            // Создаем карту существующих модулей по ID
+            const existingModulesMap = new Map(
+              existingModules.data.map(module => [module.id, module])
+            );
+
+            // Модули для удаления (те, которых нет в текущем списке)
+            const moduleIdsToKeep = new Set(modules.filter(m => m.id).map(m => m.id));
+            const modulesToDelete = existingModules.data.filter(m => !moduleIdsToKeep.has(m.id));
+
+            // Удаляем ненужные модули и их характеристики
+            for (const module of modulesToDelete) {
+              // Проверяем, есть ли доступ к модели PanelCharacteristics
+              if (client.models.PanelCharacteristics) {
+                // Сначала удаляем характеристики модуля
+                try {
+                  const existingCharacteristics = await client.models.PanelCharacteristics.list({
+                    filter: { moduleId: { eq: module.id } }
+                  });
+
+                  if (existingCharacteristics.data) {
+                    await Promise.all(
+                      existingCharacteristics.data.map(char => 
+                        client.models.PanelCharacteristics.delete({ id: char.id })
+                      )
+                    );
+                  }
+                } catch (err) {
+                  console.error('Error deleting characteristics for module:', err);
+                }
+              }
+
+              // Затем удаляем сам модуль
+              try {
+                await client.models.Module.delete({ id: module.id });
+              } catch (err) {
+                console.error('Error deleting module:', err);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error handling existing modules:', err);
         }
       } else {
         // Создаем новую панель
@@ -242,187 +456,291 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
         panelId = result.data.id;
       }
 
-      // Создаем новые характеристики
-      const createCharacteristics = [];
-
-      if (hasStc) {
-        createCharacteristics.push(
-          client.models.PanelCharacteristics.create({
-            solarPanelId: panelId,
-            type: 'STC',
-            maximumPower: parseFloat(characteristics.stc.maximumPower),
-            openCircuitVoltage: parseFloat(characteristics.stc.openCircuitVoltage),
-            shortCircuitCurrent: parseFloat(characteristics.stc.shortCircuitCurrent),
-            voltageAtMaximumPower: parseFloat(characteristics.stc.voltageAtMaximumPower),
-            currentAtMaximumPower: parseFloat(characteristics.stc.currentAtMaximumPower),
-          })
-        );
+      // Проверяем, есть ли доступ к модели Module
+      if (!client.models.Module) {
+        console.warn('Module model is not available yet for creating modules');
+        // Даже если модуль не доступен, мы создали панель, так что можно завершить
+        onSuccess();
+        return;
       }
 
-      if (hasNoct) {
-        createCharacteristics.push(
-          client.models.PanelCharacteristics.create({
-            solarPanelId: panelId,
-            type: 'NOCT',
-            maximumPower: parseFloat(characteristics.noct.maximumPower),
-            openCircuitVoltage: parseFloat(characteristics.noct.openCircuitVoltage),
-            shortCircuitCurrent: parseFloat(characteristics.noct.shortCircuitCurrent),
-            voltageAtMaximumPower: parseFloat(characteristics.noct.voltageAtMaximumPower),
-            currentAtMaximumPower: parseFloat(characteristics.noct.currentAtMaximumPower),
-          })
-        );
+      // Создаем или обновляем модули и их характеристики
+      for (const moduleInput of modules) {
+        let moduleId: string;
+
+        if (moduleInput.id) {
+          // Обновляем существующий модуль
+          try {
+            const result = await client.models.Module.update({
+              id: moduleInput.id,
+              power: parseFloat(moduleInput.power),
+              solarPanelId: panelId,
+            });
+            if (!result.data) throw new Error('Failed to update module');
+            moduleId = moduleInput.id;
+
+            // Проверяем, есть ли доступ к модели PanelCharacteristics
+            if (client.models.PanelCharacteristics) {
+              // Удаляем существующие характеристики модуля
+              try {
+                const existingCharacteristics = await client.models.PanelCharacteristics.list({
+                  filter: { moduleId: { eq: moduleId } }
+                });
+
+                if (existingCharacteristics.data) {
+                  await Promise.all(
+                    existingCharacteristics.data.map(char => 
+                      client.models.PanelCharacteristics.delete({ id: char.id })
+                    )
+                  );
+                }
+              } catch (err) {
+                console.error('Error deleting characteristics for existing module:', err);
+              }
+            }
+          } catch (err) {
+            console.error('Error updating module:', err);
+            continue; // Пропускаем этот модуль и переходим к следующему
+          }
+        } else {
+          // Создаем новый модуль
+          try {
+            const result = await client.models.Module.create({
+              power: parseFloat(moduleInput.power),
+              solarPanelId: panelId,
+            });
+            if (!result.data) throw new Error('Failed to create module');
+            moduleId = result.data.id;
+          } catch (err) {
+            console.error('Error creating module:', err);
+            continue; // Пропускаем этот модуль и переходим к следующему
+          }
+        }
+
+        // Проверяем, есть ли доступ к модели PanelCharacteristics
+        if (!client.models.PanelCharacteristics) {
+          console.warn('PanelCharacteristics model is not available yet for creating characteristics');
+          continue;
+        }
+
+        // Создаем характеристики для модуля
+        const createCharacteristicsPromises = [];
+
+        // STC
+        if (Object.values(moduleInput.characteristics.stc).every(value => value !== '')) {
+          try {
+            createCharacteristicsPromises.push(
+              client.models.PanelCharacteristics.create({
+                type: 'STC',
+                maximumPower: parseFloat(moduleInput.characteristics.stc.maximumPower),
+                openCircuitVoltage: parseFloat(moduleInput.characteristics.stc.openCircuitVoltage),
+                shortCircuitCurrent: parseFloat(moduleInput.characteristics.stc.shortCircuitCurrent),
+                voltageAtMaximumPower: parseFloat(moduleInput.characteristics.stc.voltageAtMaximumPower),
+                currentAtMaximumPower: parseFloat(moduleInput.characteristics.stc.currentAtMaximumPower),
+                moduleId: moduleId,
+              })
+            );
+          } catch (err) {
+            console.error('Error creating STC characteristics:', err);
+          }
+        }
+
+        // NOCT
+        if (Object.values(moduleInput.characteristics.noct).every(value => value !== '')) {
+          try {
+            createCharacteristicsPromises.push(
+              client.models.PanelCharacteristics.create({
+                type: 'NOCT',
+                maximumPower: parseFloat(moduleInput.characteristics.noct.maximumPower),
+                openCircuitVoltage: parseFloat(moduleInput.characteristics.noct.openCircuitVoltage),
+                shortCircuitCurrent: parseFloat(moduleInput.characteristics.noct.shortCircuitCurrent),
+                voltageAtMaximumPower: parseFloat(moduleInput.characteristics.noct.voltageAtMaximumPower),
+                currentAtMaximumPower: parseFloat(moduleInput.characteristics.noct.currentAtMaximumPower),
+                moduleId: moduleId,
+              })
+            );
+          } catch (err) {
+            console.error('Error creating NOCT characteristics:', err);
+          }
+        }
+
+        // NMOT
+        if (Object.values(moduleInput.characteristics.nmot).every(value => value !== '')) {
+          try {
+            createCharacteristicsPromises.push(
+              client.models.PanelCharacteristics.create({
+                type: 'NMOT',
+                maximumPower: parseFloat(moduleInput.characteristics.nmot.maximumPower),
+                openCircuitVoltage: parseFloat(moduleInput.characteristics.nmot.openCircuitVoltage),
+                shortCircuitCurrent: parseFloat(moduleInput.characteristics.nmot.shortCircuitCurrent),
+                voltageAtMaximumPower: parseFloat(moduleInput.characteristics.nmot.voltageAtMaximumPower),
+                currentAtMaximumPower: parseFloat(moduleInput.characteristics.nmot.currentAtMaximumPower),
+                moduleId: moduleId,
+              })
+            );
+          } catch (err) {
+            console.error('Error creating NMOT characteristics:', err);
+          }
+        }
+
+        try {
+          await Promise.all(createCharacteristicsPromises);
+        } catch (err) {
+          console.error('Error creating characteristics batch:', err);
+        }
       }
 
-      if (hasNmot) {
-        createCharacteristics.push(
-          client.models.PanelCharacteristics.create({
-            solarPanelId: panelId,
-            type: 'NMOT',
-            maximumPower: parseFloat(characteristics.nmot.maximumPower),
-            openCircuitVoltage: parseFloat(characteristics.nmot.openCircuitVoltage),
-            shortCircuitCurrent: parseFloat(characteristics.nmot.shortCircuitCurrent),
-            voltageAtMaximumPower: parseFloat(characteristics.nmot.voltageAtMaximumPower),
-            currentAtMaximumPower: parseFloat(characteristics.nmot.currentAtMaximumPower),
-          })
-        );
-      }
-
-      await Promise.all(createCharacteristics);
       onSuccess();
     } catch (error) {
-      console.error('Error saving panel:', error);
+      console.error('Error submitting form:', error);
       setError(t('errors.unknown'));
     }
   };
 
-  const handleCharacteristicsChange = (type: 'stc' | 'noct' | 'nmot', value: PanelCharacteristicsInput) => {
-    setCharacteristics(prev => ({
-      ...prev,
-      [type]: value,
-    }));
+  const handleModuleChange = (index: number, moduleInput: ModuleInput) => {
+    const newModules = [...modules];
+    newModules[index] = moduleInput;
+    setModules(newModules);
   };
 
+  const handleAddModule = () => {
+    const newModules = [...modules, { ...emptyModule }];
+    setModules(newModules);
+    const newIndex = newModules.length - 1;
+    setActiveModuleIndex(newIndex.toString());
+    // Ensure the new module's characteristics are initialized
+    if (!newModules[newIndex].characteristics) {
+      newModules[newIndex].characteristics = {
+        stc: { ...emptyCharacteristics },
+        noct: { ...emptyCharacteristics },
+        nmot: { ...emptyCharacteristics },
+      };
+    }
+  };
+
+  const handleDeleteModule = (index: number) => {
+    if (modules.length <= 1) return;
+    const newModules = [...modules];
+    newModules.splice(index, 1);
+    setModules(newModules);
+    if (parseInt(activeModuleIndex) >= index && parseInt(activeModuleIndex) > 0) {
+      setActiveModuleIndex((parseInt(activeModuleIndex) - 1).toString());
+    }
+  };
+
+  if (isLoading) {
+    return <Text>{t('common.loading')}</Text>;
+  }
+
   return (
-    <Card>
-      {isLoading ? (
-        <Text>{t('common.loading')}</Text>
-      ) : (
-        <Flex direction="column" gap="1rem">
-          <Text>{solarPanel ? t('solarPanels.update') : t('solarPanels.create')}</Text>
-          
-          <Flex direction="column" gap="0.5rem">
-            <Label>{t('solarPanels.name')}</Label>
-            <Input
-              placeholder={t('solarPanels.namePlaceholder')}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </Flex>
+    <Flex direction="column" gap="1.5rem">
+      <Flex direction="column" gap="0.5rem">
+        <Label htmlFor="name">{t('solarPanels.name')}</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('solarPanels.namePlaceholder')}
+          required
+        />
+      </Flex>
 
-          <SelectField
-            label={t('solarPanels.selectManufacturer')}
-            value={manufacturerId}
-            onChange={(e) => setManufacturerId(e.target.value)}
-          >
-            <option value="">{t('solarPanels.chooseManufacturer')}</option>
-            {manufacturers.map((manufacturer) => (
-              <option key={manufacturer.id} value={manufacturer.id}>
-                {manufacturer.name}
-              </option>
-            ))}
-          </SelectField>
+      <Flex direction="column" gap="0.5rem">
+        <Label htmlFor="manufacturerId">{t('solarPanels.selectManufacturer')}</Label>
+        <SelectField
+          id="manufacturerId"
+          label=""
+          value={manufacturerId}
+          onChange={(e) => setManufacturerId(e.target.value)}
+          placeholder={t('solarPanels.chooseManufacturer')}
+          required
+        >
+          {manufacturers.map((manufacturer) => (
+            <option key={manufacturer.id} value={manufacturer.id}>
+              {manufacturer.name}
+            </option>
+          ))}
+        </SelectField>
+      </Flex>
 
-          <Flex direction="column" gap="0.5rem">
-            <Label>{t('solarPanels.temperatureCoefficientOfVOC')}</Label>
-            <Input
-              type="number"
-              placeholder={t('solarPanels.temperatureCoefficientOfVOCPlaceholder')}
-              value={temperatureCoefficientOfVOC}
-              onChange={(e) => setTemperatureCoefficientOfVOC(e.target.value)}
-            />
-          </Flex>
-
-          <Flex direction="column" gap="0.5rem">
-            <Label>{t('solarPanels.temperatureCoefficientOfISC')}</Label>
-            <Input
-              type="number"
-              placeholder={t('solarPanels.temperatureCoefficientOfISCPlaceholder')}
-              value={temperatureCoefficientOfISC}
-              onChange={(e) => setTemperatureCoefficientOfISC(e.target.value)}
-            />
-          </Flex>
-
-          <Flex direction="column" gap="0.5rem">
-            <Label>{t('solarPanels.temperatureCoefficientOfPmax')}</Label>
-            <Input
-              type="number"
-              placeholder={t('solarPanels.temperatureCoefficientOfPmaxPlaceholder')}
-              value={temperatureCoefficientOfPmax}
-              onChange={(e) => setTemperatureCoefficientOfPmax(e.target.value)}
-            />
-          </Flex>
-
-          <Flex direction="column" gap="1rem">
-            <Flex gap="1rem">
-              <Button
-                onClick={() => setActiveTab('stc')}
-                variation="primary"
-                backgroundColor={activeTab === 'stc' ? undefined : '#f0f0f0'}
-                color={activeTab === 'stc' ? undefined : '#000000'}
-              >
-                {t('solarPanels.characteristics.stc')}
-              </Button>
-              <Button
-                onClick={() => setActiveTab('noct')}
-                variation="primary"
-                backgroundColor={activeTab === 'noct' ? undefined : '#f0f0f0'}
-                color={activeTab === 'noct' ? undefined : '#000000'}
-              >
-                {t('solarPanels.characteristics.noct')}
-              </Button>
-              <Button
-                onClick={() => setActiveTab('nmot')}
-                variation="primary"
-                backgroundColor={activeTab === 'nmot' ? undefined : '#f0f0f0'}
-                color={activeTab === 'nmot' ? undefined : '#000000'}
-              >
-                {t('solarPanels.characteristics.nmot')}
-              </Button>
-            </Flex>
-
-            {activeTab === 'stc' && (
-              <CharacteristicsForm
-                characteristics={characteristics.stc}
-                onChange={(value) => handleCharacteristicsChange('stc', value)}
-                t={t}
-              />
-            )}
-            {activeTab === 'noct' && (
-              <CharacteristicsForm
-                characteristics={characteristics.noct}
-                onChange={(value) => handleCharacteristicsChange('noct', value)}
-                t={t}
-              />
-            )}
-            {activeTab === 'nmot' && (
-              <CharacteristicsForm
-                characteristics={characteristics.nmot}
-                onChange={(value) => handleCharacteristicsChange('nmot', value)}
-                t={t}
-              />
-            )}
-          </Flex>
-
-          {error && <Text color="red">{error}</Text>}
-
-          <Flex gap="1rem">
-            <Button onClick={handleSubmit}>
-              {solarPanel ? t('solarPanels.update') : t('solarPanels.create')}
-            </Button>
-            <Button onClick={onSuccess}>{t('solarPanels.cancel')}</Button>
-          </Flex>
+      <Grid templateColumns="1fr 1fr 1fr" gap="1rem">
+        <Flex direction="column" gap="0.5rem">
+          <Label htmlFor="temperatureCoefficientOfVOC">
+            {t('solarPanels.temperatureCoefficientOfVOC')}
+          </Label>
+          <Input
+            id="temperatureCoefficientOfVOC"
+            type="number"
+            value={temperatureCoefficientOfVOC}
+            onChange={(e) => setTemperatureCoefficientOfVOC(e.target.value)}
+            required
+          />
         </Flex>
-      )}
-    </Card>
+        <Flex direction="column" gap="0.5rem">
+          <Label htmlFor="temperatureCoefficientOfISC">
+            {t('solarPanels.temperatureCoefficientOfISC')}
+          </Label>
+          <Input
+            id="temperatureCoefficientOfISC"
+            type="number"
+            value={temperatureCoefficientOfISC}
+            onChange={(e) => setTemperatureCoefficientOfISC(e.target.value)}
+            required
+          />
+        </Flex>
+        <Flex direction="column" gap="0.5rem">
+          <Label htmlFor="temperatureCoefficientOfPmax">
+            {t('solarPanels.temperatureCoefficientOfPmax')}
+          </Label>
+          <Input
+            id="temperatureCoefficientOfPmax"
+            type="number"
+            value={temperatureCoefficientOfPmax}
+            onChange={(e) => setTemperatureCoefficientOfPmax(e.target.value)}
+            required
+          />
+        </Flex>
+      </Grid>
+
+      <Divider />
+
+      <Flex direction="column" gap="1rem">
+        <Flex justifyContent="space-between" alignItems="center">
+          <Heading level={3}>{t('solarPanels.modules')}</Heading>
+          <Button onClick={handleAddModule}>
+            + {t('solarPanels.addModule')}
+          </Button>
+        </Flex>
+        <Flex direction="row" gap="0.5rem" wrap="wrap">
+          {modules.map((module, index) => (
+            <Button
+              key={`module-button-${index}`}
+              onClick={() => setActiveModuleIndex(index.toString())}
+              variation={activeModuleIndex === index.toString() ? 'primary' : 'link'}
+            >
+              {module.power ? `${module.power}W` : t('solarPanels.newModule')}
+            </Button>
+          ))}
+        </Flex>
+        {modules.length > 0 && modules[parseInt(activeModuleIndex)] && (
+          <Card>
+            <ModuleForm
+              module={modules[parseInt(activeModuleIndex)]}
+              onChange={(moduleInput) => handleModuleChange(parseInt(activeModuleIndex), moduleInput)}
+              onDelete={modules.length > 1 ? () => handleDeleteModule(parseInt(activeModuleIndex)) : undefined}
+              t={t}
+            />
+          </Card>
+        )}
+      </Flex>
+
+      {error && <Text variation="error">{error}</Text>}
+
+      <Flex direction="row" gap="1rem">
+        <Button variation="primary" onClick={handleSubmit}>
+          {solarPanel ? t('solarPanels.update') : t('solarPanels.create')}
+        </Button>
+      </Flex>
+    </Flex>
   );
 } 

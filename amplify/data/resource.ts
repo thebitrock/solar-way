@@ -15,7 +15,15 @@ const schema = a.schema({
       temperatureCoefficientOfVOC: a.float().required(),
       temperatureCoefficientOfISC: a.float().required(),
       temperatureCoefficientOfPmax: a.float().required(),
-      characteristics: a.hasMany('PanelCharacteristics', 'solarPanelId'),
+      modules: a.hasMany('Module', 'solarPanelId')
+    })
+    .authorization((allow) => [allow.guest()]),
+  Module: a
+    .model({
+      power: a.float().required(),
+      solarPanel: a.belongsTo('SolarPanel', 'solarPanelId'),
+      solarPanelId: a.id().required(),
+      characteristics: a.hasMany('PanelCharacteristics', 'moduleId')
     })
     .authorization((allow) => [allow.guest()]),
   PanelCharacteristics: a
@@ -25,8 +33,8 @@ const schema = a.schema({
       shortCircuitCurrent: a.float().required(),
       voltageAtMaximumPower: a.float().required(),
       currentAtMaximumPower: a.float().required(),
-      solarPanel: a.belongsTo('SolarPanel', 'solarPanelId'),
-      solarPanelId: a.id().required(),
+      module: a.belongsTo('Module', 'moduleId'),
+      moduleId: a.id().required(),
       type: a.string().required(),
     })
     .authorization((allow) => [allow.guest()]),
