@@ -37,15 +37,15 @@ export default function Modal({ isOpen, onClose, children, title, type }: ModalP
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <Card className="w-full max-w-2xl mx-auto my-4">
-        <Flex direction="column" gap="1rem">
-          <Flex justifyContent="space-between" alignItems="center">
-            <h2 className="text-xl font-bold">{title}</h2>
+      <Card className="w-full max-w-4xl mx-auto my-8 min-h-[60vh]">
+        <Flex direction="column" gap="1.5rem">
+          <Flex justifyContent="space-between" alignItems="center" className="px-2">
+            <h2 className="text-2xl font-bold">{title}</h2>
             <Button onClick={onClose} variation="link">
               {t('modal.close')}
             </Button>
           </Flex>
-          <div className="max-h-[70vh] overflow-y-auto pr-2">
+          <div className="max-h-[80vh] overflow-y-auto px-2">
             {children}
           </div>
         </Flex>
