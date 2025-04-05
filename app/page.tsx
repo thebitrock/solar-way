@@ -557,7 +557,7 @@ export default function Home() {
   return (
     <Flex direction="column" gap="1.5rem" padding="1rem">
       <Flex direction="row" justifyContent="space-between" alignItems="center">
-        <Text fontSize="2rem" fontWeight="bold">{t('title')}</Text>
+        <Text fontSize="1.5rem" fontWeight="bold">{t('title')}</Text>
         <Button onClick={handleLanguageToggle}>{language === 'uk' ? '🇬🇧 EN' : '🇺🇦 UA'}</Button>
       </Flex>
       

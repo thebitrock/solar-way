@@ -42,7 +42,7 @@ export default function Modal({ isOpen, onClose, children, title, type, onSubmit
         <Flex direction="column" className="h-[80vh]">
           {/* Header */}
           <Flex justifyContent="space-between" alignItems="center" className="px-4 py-3 border-b">
-            <h2 className="text-2xl font-bold">{title}</h2>
+            <h4 className="text-2xl font-bold">{title}</h4>
             <Button onClick={onClose} variation="link">
               {t('modal.close')}
             </Button>

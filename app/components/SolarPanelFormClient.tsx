@@ -900,7 +900,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
 
       <Flex direction="column" gap="1rem">
         <Flex justifyContent="space-between" alignItems="center">
-          <Heading level={3}>{t('solarPanels.modules')}</Heading>
+          <Heading level={5}>{t('solarPanels.modules')}</Heading>
           <Button onClick={handleAddModule}>
             + {t('solarPanels.addModule')}
           </Button>
