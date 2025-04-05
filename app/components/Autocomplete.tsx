@@ -50,7 +50,14 @@ export default function Autocomplete<T>({
 
   return (
     <div ref={wrapperRef} className="relative">
-      {label && <Label>{label}</Label>}
+      {label && (
+        <Label
+          htmlFor={id}
+          className="text-sm font-medium mb-1"
+        >
+          {label}
+        </Label>
+      )}
       <Input
         id={id}
         type="text"
@@ -61,21 +68,25 @@ export default function Autocomplete<T>({
         }}
         onFocus={() => setIsOpen(true)}
         placeholder={placeholder}
+        className="w-full text-base"
       />
       {isOpen && filteredItems.length > 0 && (
-        <Card className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto">
+        <Card 
+          className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto shadow-lg"
+          variation="outlined"
+        >
           <Flex direction="column">
             {filteredItems.map((item, index) => (
               <button
                 key={index}
-                className="px-4 py-2 text-left hover:bg-gray-100"
+                className="px-4 py-2 text-left hover:bg-gray-100 transition-colors duration-150 text-base"
                 onClick={() => {
                   onSelect(item);
                   onChange(getOptionLabel(item));
                   setIsOpen(false);
                 }}
               >
-                <Text>{getOptionLabel(item)}</Text>
+                <Text className="text-base">{getOptionLabel(item)}</Text>
               </button>
             ))}
           </Flex>

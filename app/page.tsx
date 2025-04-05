@@ -30,6 +30,7 @@ import {
   AmplifyModule,
   AmplifyPanelCharacteristics
 } from './types';
+import Autocomplete from './components/Autocomplete';
 
 Amplify.configure(outputs);
 
@@ -142,6 +143,7 @@ export default function Home() {
   const [mpptMaxVDC, setMpptMaxVDC] = useState<number>(500);
   const [selectedPanelId, setSelectedPanelId] = useState('');
   const [forceUpdate, setForceUpdate] = useState(0);
+  const [searchPanelValue, setSearchPanelValue] = useState('');
 
   // Загрузка сохраненных значений
   useEffect(() => {
@@ -586,36 +588,18 @@ export default function Home() {
         <>
           <Card>
             <Flex direction="column" gap="1rem">
-              <SelectField
-                label={t('calculation.selectSolarPanel')}
-                value={selectedPanelId}
-                onChange={async (e) => {
-                  const panelId = e.target.value;
-                  setSelectedPanelId(panelId);
-                  setSelectedSolarPanel(undefined);
-                  setSelectedModule(null);
-                  
-                  if (!panelId) {
-                    return;
-                  }
-
-                  try {
-                    const panelResult = await client.models.SolarPanel.get({ id: panelId });
-                    if (panelResult.data) {
-                      handlePanelSelect(panelResult.data);
-                    }
-                  } catch (error) {
-                    console.error('Error loading solar panel:', error);
-                  }
+              <Autocomplete
+                options={solarPanels}
+                value={searchPanelValue}
+                onChange={setSearchPanelValue}
+                onSelect={(panel) => {
+                  handlePanelSelect(panel);
+                  setSelectedPanelId(panel.id);
                 }}
-              >
-                <option value="">{t('calculation.chooseSolarPanel')}</option>
-                {solarPanels.map((panel) => (
-                  <option key={panel.id} value={panel.id}>
-                    {getSolarPanelLabel(panel)}
-                  </option>
-                ))}
-              </SelectField>
+                getOptionLabel={(panel) => getSolarPanelLabel(panel)}
+                label={t('calculation.selectSolarPanel')}
+                placeholder={t('calculation.chooseSolarPanel')}
+              />
 
               {selectedSolarPanel && selectedSolarPanel.modules && selectedSolarPanel.modules.length > 0 && (
                 <ModuleSelector
