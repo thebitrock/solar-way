@@ -86,13 +86,9 @@ function ModuleForm({
 }) {
   const [activeTab, setActiveTab] = useState<'stc' | 'noct' | 'nmot'>('stc');
 
-  const handleTabChange = (e: FormEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    const value = target.getAttribute('data-value');
-    if (value === 'stc' || value === 'noct' || value === 'nmot') {
-      setActiveTab(value);
-    }
-  };
+  useEffect(() => {
+    setActiveTab('stc');
+  }, []);
 
   return (
     <Flex direction="column" gap="1rem">
@@ -116,63 +112,66 @@ function ModuleForm({
 
       <Divider />
 
-      <Tabs
-        spacing="equal"
-        items={[
-          {
-            value: 'stc',
-            label: t('solarPanels.characteristics.stc'),
-            content: (
-              <CharacteristicsForm
-                characteristics={module.characteristics.stc}
-                onChange={(value) => onChange({
-                  ...module,
-                  characteristics: {
-                    ...module.characteristics,
-                    stc: value
-                  }
-                })}
-                t={t}
-              />
-            )
-          },
-          {
-            value: 'noct',
-            label: t('solarPanels.characteristics.noct'),
-            content: (
-              <CharacteristicsForm
-                characteristics={module.characteristics.noct}
-                onChange={(value) => onChange({
-                  ...module,
-                  characteristics: {
-                    ...module.characteristics,
-                    noct: value
-                  }
-                })}
-                t={t}
-              />
-            )
-          },
-          {
-            value: 'nmot',
-            label: t('solarPanels.characteristics.nmot'),
-            content: (
-              <CharacteristicsForm
-                characteristics={module.characteristics.nmot}
-                onChange={(value) => onChange({
-                  ...module,
-                  characteristics: {
-                    ...module.characteristics,
-                    nmot: value
-                  }
-                })}
-                t={t}
-              />
-            )
-          }
-        ]}
-        onChange={handleTabChange}
-      />
+      <Flex direction="row" gap="1rem">
+        <Button
+          variation={activeTab === 'stc' ? 'primary' : 'link'}
+          onClick={() => setActiveTab('stc')}
+        >
+          {t('solarPanels.characteristics.stc')}
+        </Button>
+        <Button
+          variation={activeTab === 'noct' ? 'primary' : 'link'}
+          onClick={() => setActiveTab('noct')}
+        >
+          {t('solarPanels.characteristics.noct')}
+        </Button>
+        <Button
+          variation={activeTab === 'nmot' ? 'primary' : 'link'}
+          onClick={() => setActiveTab('nmot')}
+        >
+          {t('solarPanels.characteristics.nmot')}
+        </Button>
+      </Flex>
+
+      {activeTab === 'stc' && (
+        <CharacteristicsForm
+          characteristics={module.characteristics.stc}
+          onChange={(value) => onChange({
+            ...module,
+            characteristics: {
+              ...module.characteristics,
+              stc: value
+            }
+          })}
+          t={t}
+        />
+      )}
+      {activeTab === 'noct' && (
+        <CharacteristicsForm
+          characteristics={module.characteristics.noct}
+          onChange={(value) => onChange({
+            ...module,
+            characteristics: {
+              ...module.characteristics,
+              noct: value
+            }
+          })}
+          t={t}
+        />
+      )}
+      {activeTab === 'nmot' && (
+        <CharacteristicsForm
+          characteristics={module.characteristics.nmot}
+          onChange={(value) => onChange({
+            ...module,
+            characteristics: {
+              ...module.characteristics,
+              nmot: value
+            }
+          })}
+          t={t}
+        />
+      )}
     </Flex>
   );
 }
@@ -214,6 +213,14 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
   const [activeModuleIndex, setActiveModuleIndex] = useState('0');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Устанавливаем вкладку STC по умолчанию при монтировании компонента
+  useEffect(() => {
+    // Если это редактирование существующей панели, устанавливаем вкладку STC
+    if (solarPanel?.id) {
+      setActiveModuleIndex('0');
+    }
+  }, [solarPanel?.id]);
 
   const handleModuleTabChange = (e: FormEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
