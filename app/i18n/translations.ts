@@ -140,7 +140,15 @@ export const translations = {
       unknown: 'Сталася невідома помилка',
       moduleRequired: 'Необхідно додати хоча б один модуль',
       modulePowerRequired: 'Необхідно вказати потужність для всіх модулів',
-      moduleNotAvailable: 'API модуля недоступне. Будь ласка, оновіть сторінку і спробуйте знову'
+      moduleNotAvailable: 'API модуля недоступне. Будь ласка, оновіть сторінку і спробуйте знову',
+      nameRequired: 'Необхідно вказати назву',
+      manufacturerRequired: 'Необхідно вибрати виробника',
+      powerRequired: 'Необхідно вказати потужність',
+      maximumPowerRequired: 'Необхідно вказати максимальну потужність',
+      openCircuitVoltageRequired: 'Необхідно вказати напругу холостого ходу',
+      shortCircuitCurrentRequired: 'Необхідно вказати струм короткого замикання',
+      voltageAtMaximumPowerRequired: 'Необхідно вказати напругу при максимальній потужності',
+      currentAtMaximumPowerRequired: 'Необхідно вказати струм при максимальній потужності'
     }
   },
   en: {
@@ -284,7 +292,15 @@ export const translations = {
       unknown: 'An unknown error occurred',
       moduleRequired: 'At least one module is required',
       modulePowerRequired: 'Power must be specified for all modules',
-      moduleNotAvailable: 'Module API is not available. Please refresh the page and try again'
+      moduleNotAvailable: 'Module API is not available. Please refresh the page and try again',
+      nameRequired: 'Name is required',
+      manufacturerRequired: 'Manufacturer must be selected',
+      powerRequired: 'Power is required',
+      maximumPowerRequired: 'Maximum power is required',
+      openCircuitVoltageRequired: 'Open circuit voltage is required',
+      shortCircuitCurrentRequired: 'Short circuit current is required',
+      voltageAtMaximumPowerRequired: 'Voltage at maximum power is required',
+      currentAtMaximumPowerRequired: 'Current at maximum power is required'
     }
   }
 }; 

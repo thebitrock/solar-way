@@ -10,10 +10,12 @@ import { SolarPanelFormProps, PanelCharacteristicsInput, ModuleInput } from './S
 function CharacteristicsForm({ 
   characteristics, 
   onChange, 
+  errors,
   t 
 }: { 
   characteristics: PanelCharacteristicsInput; 
-  onChange: (value: PanelCharacteristicsInput) => void; 
+  onChange: (value: PanelCharacteristicsInput) => void;
+  errors?: Record<string, string>;
   t: (key: string) => string; 
 }) {
   console.log('Rendering CharacteristicsForm with characteristics:', characteristics);
@@ -27,7 +29,9 @@ function CharacteristicsForm({
           value={characteristics.maximumPower}
           onChange={(e) => onChange({ ...characteristics, maximumPower: e.target.value })}
           placeholder={t('solarPanels.maximumPowerPlaceholder')}
+          hasError={!!errors?.maximumPower}
         />
+        {errors?.maximumPower && <Text variation="error">{errors.maximumPower}</Text>}
       </Flex>
       <Flex direction="column" gap="0.5rem">
         <Label htmlFor="openCircuitVoltage">{t('solarPanels.openCircuitVoltage')}</Label>
@@ -37,7 +41,9 @@ function CharacteristicsForm({
           value={characteristics.openCircuitVoltage}
           onChange={(e) => onChange({ ...characteristics, openCircuitVoltage: e.target.value })}
           placeholder={t('solarPanels.openCircuitVoltagePlaceholder')}
+          hasError={!!errors?.openCircuitVoltage}
         />
+        {errors?.openCircuitVoltage && <Text variation="error">{errors.openCircuitVoltage}</Text>}
       </Flex>
       <Flex direction="column" gap="0.5rem">
         <Label htmlFor="shortCircuitCurrent">{t('solarPanels.shortCircuitCurrent')}</Label>
@@ -47,7 +53,9 @@ function CharacteristicsForm({
           value={characteristics.shortCircuitCurrent}
           onChange={(e) => onChange({ ...characteristics, shortCircuitCurrent: e.target.value })}
           placeholder={t('solarPanels.shortCircuitCurrentPlaceholder')}
+          hasError={!!errors?.shortCircuitCurrent}
         />
+        {errors?.shortCircuitCurrent && <Text variation="error">{errors.shortCircuitCurrent}</Text>}
       </Flex>
       <Flex direction="column" gap="0.5rem">
         <Label htmlFor="voltageAtMaximumPower">{t('solarPanels.voltageAtMaximumPower')}</Label>
@@ -57,7 +65,9 @@ function CharacteristicsForm({
           value={characteristics.voltageAtMaximumPower}
           onChange={(e) => onChange({ ...characteristics, voltageAtMaximumPower: e.target.value })}
           placeholder={t('solarPanels.voltageAtMaximumPowerPlaceholder')}
+          hasError={!!errors?.voltageAtMaximumPower}
         />
+        {errors?.voltageAtMaximumPower && <Text variation="error">{errors.voltageAtMaximumPower}</Text>}
       </Flex>
       <Flex direction="column" gap="0.5rem">
         <Label htmlFor="currentAtMaximumPower">{t('solarPanels.currentAtMaximumPower')}</Label>
@@ -67,7 +77,9 @@ function CharacteristicsForm({
           value={characteristics.currentAtMaximumPower}
           onChange={(e) => onChange({ ...characteristics, currentAtMaximumPower: e.target.value })}
           placeholder={t('solarPanels.currentAtMaximumPowerPlaceholder')}
+          hasError={!!errors?.currentAtMaximumPower}
         />
+        {errors?.currentAtMaximumPower && <Text variation="error">{errors.currentAtMaximumPower}</Text>}
       </Flex>
     </Flex>
   );
@@ -77,11 +89,20 @@ function ModuleForm({
   module,
   onChange,
   onDelete,
+  errors,
   t
 }: {
   module: ModuleInput;
   onChange: (module: ModuleInput) => void;
   onDelete?: () => void;
+  errors?: {
+    power?: string;
+    characteristics?: {
+      stc?: Record<string, string>;
+      noct?: Record<string, string>;
+      nmot?: Record<string, string>;
+    };
+  };
   t: (key: string) => string;
 }) {
   const [activeTab, setActiveTab] = useState<'stc' | 'noct' | 'nmot'>('stc');
@@ -101,7 +122,9 @@ function ModuleForm({
             value={module.power}
             onChange={(e) => onChange({ ...module, power: e.target.value })}
             placeholder={t('solarPanels.modulePowerPlaceholder')}
+            hasError={!!errors?.power}
           />
+          {errors?.power && <Text variation="error">{errors.power}</Text>}
         </Flex>
         {onDelete && (
           <Button variation="destructive" onClick={onDelete} marginLeft="1rem">
@@ -118,18 +141,33 @@ function ModuleForm({
           onClick={() => setActiveTab('stc')}
         >
           {t('solarPanels.characteristics.stc')}
+          {errors?.characteristics?.stc && (
+            <Text variation="error" fontSize="small" marginLeft="0.5rem">
+              ⚠️
+            </Text>
+          )}
         </Button>
         <Button
           variation={activeTab === 'noct' ? 'primary' : 'link'}
           onClick={() => setActiveTab('noct')}
         >
           {t('solarPanels.characteristics.noct')}
+          {errors?.characteristics?.noct && (
+            <Text variation="error" fontSize="small" marginLeft="0.5rem">
+              ⚠️
+            </Text>
+          )}
         </Button>
         <Button
           variation={activeTab === 'nmot' ? 'primary' : 'link'}
           onClick={() => setActiveTab('nmot')}
         >
           {t('solarPanels.characteristics.nmot')}
+          {errors?.characteristics?.nmot && (
+            <Text variation="error" fontSize="small" marginLeft="0.5rem">
+              ⚠️
+            </Text>
+          )}
         </Button>
       </Flex>
 
@@ -143,6 +181,7 @@ function ModuleForm({
               stc: value
             }
           })}
+          errors={errors?.characteristics?.stc}
           t={t}
         />
       )}
@@ -156,6 +195,7 @@ function ModuleForm({
               noct: value
             }
           })}
+          errors={errors?.characteristics?.noct}
           t={t}
         />
       )}
@@ -169,6 +209,7 @@ function ModuleForm({
               nmot: value
             }
           })}
+          errors={errors?.characteristics?.nmot}
           t={t}
         />
       )}
@@ -211,7 +252,18 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
   const [manufacturers, setManufacturers] = useState<Array<{ id: string; name: string }>>([]);
   const [modules, setModules] = useState<ModuleInput[]>([]);
   const [activeModuleIndex, setActiveModuleIndex] = useState('0');
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<{
+    name?: string;
+    manufacturerId?: string;
+    modules?: Record<number, {
+      power?: string;
+      characteristics?: {
+        stc?: Record<string, string>;
+        noct?: Record<string, string>;
+        nmot?: Record<string, string>;
+      };
+    }>;
+  }>({});
   const [isLoading, setIsLoading] = useState(true);
 
   // Устанавливаем вкладку STC по умолчанию при монтировании компонента
@@ -338,7 +390,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
       } catch (error) {
         if (!mounted) return;
         console.error('Error loading data:', error);
-        setError(t('errors.unknown'));
+        setErrors({ name: t('errors.unknown') });
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -353,32 +405,91 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
     };
   }, []);
 
+  const validateModule = (module: ModuleInput, index: number) => {
+    const moduleErrors: {
+      power?: string;
+      characteristics?: {
+        stc?: Record<string, string>;
+        noct?: Record<string, string>;
+        nmot?: Record<string, string>;
+      };
+    } = {};
+
+    // Проверка мощности модуля
+    if (!module.power) {
+      moduleErrors.power = t('errors.powerRequired');
+    }
+
+    // Проверка характеристик STC (обязательные)
+    const stcErrors: Record<string, string> = {};
+    if (!module.characteristics.stc.maximumPower) {
+      stcErrors.maximumPower = t('errors.maximumPowerRequired');
+    }
+    if (!module.characteristics.stc.openCircuitVoltage) {
+      stcErrors.openCircuitVoltage = t('errors.openCircuitVoltageRequired');
+    }
+    if (!module.characteristics.stc.shortCircuitCurrent) {
+      stcErrors.shortCircuitCurrent = t('errors.shortCircuitCurrentRequired');
+    }
+    if (!module.characteristics.stc.voltageAtMaximumPower) {
+      stcErrors.voltageAtMaximumPower = t('errors.voltageAtMaximumPowerRequired');
+    }
+    if (!module.characteristics.stc.currentAtMaximumPower) {
+      stcErrors.currentAtMaximumPower = t('errors.currentAtMaximumPowerRequired');
+    }
+
+    if (Object.keys(stcErrors).length > 0) {
+      if (!moduleErrors.characteristics) {
+        moduleErrors.characteristics = {};
+      }
+      moduleErrors.characteristics.stc = stcErrors;
+    }
+
+    return moduleErrors;
+  };
+
   const handleSubmit = async () => {
     try {
-      setError('');
+      const newErrors: typeof errors = {};
 
+      // Проверка названия панели
       if (!name.trim()) {
-        setError(t('errors.required'));
-        return;
+        newErrors.name = t('errors.nameRequired');
       }
 
+      // Проверка производителя
       if (!manufacturerId) {
-        setError(t('errors.required'));
-        return;
+        newErrors.manufacturerId = t('errors.manufacturerRequired');
       }
 
-      // Проверяем, что есть хотя бы один модуль
+      // Проверка модулей
       if (modules.length === 0) {
-        setError(t('errors.moduleRequired'));
+        newErrors.modules = { 0: { power: t('errors.moduleRequired') } };
+      } else {
+        const moduleErrors: Record<number, ReturnType<typeof validateModule>> = {};
+        let hasErrors = false;
+
+        modules.forEach((module, index) => {
+          const moduleError = validateModule(module, index);
+          if (Object.keys(moduleError).length > 0) {
+            moduleErrors[index] = moduleError;
+            hasErrors = true;
+          }
+        });
+
+        if (hasErrors) {
+          newErrors.modules = moduleErrors;
+        }
+      }
+
+      // Если есть ошибки, обновляем состояние и прерываем отправку
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
         return;
       }
 
-      // Проверяем, что все модули имеют мощность
-      const invalidModules = modules.filter(module => !module.power);
-      if (invalidModules.length > 0) {
-        setError(t('errors.modulePowerRequired'));
-        return;
-      }
+      // Очищаем ошибки перед отправкой
+      setErrors({});
 
       // Создаем или обновляем панель
       const panelData = {
@@ -403,7 +514,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
         // Проверяем, есть ли доступ к модели Module
         if (!client.models.Module) {
           console.warn('Module model is not available yet in handleSubmit');
-          setError(t('errors.moduleNotAvailable'));
+          setErrors({ modules: { 0: { power: t('errors.moduleNotAvailable') } } });
           return;
         }
 
@@ -600,7 +711,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
       onSuccess();
     } catch (error) {
       console.error('Error submitting form:', error);
-      setError(t('errors.unknown'));
+      setErrors({ name: t('errors.unknown') });
     }
   };
 
@@ -648,8 +759,10 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t('solarPanels.namePlaceholder')}
+          hasError={!!errors.name}
           required
         />
+        {errors.name && <Text variation="error">{errors.name}</Text>}
       </Flex>
 
       <Flex direction="column" gap="0.5rem">
@@ -660,6 +773,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
           value={manufacturerId}
           onChange={(e) => setManufacturerId(e.target.value)}
           placeholder={t('solarPanels.chooseManufacturer')}
+          hasError={!!errors.manufacturerId}
           required
         >
           {manufacturers.map((manufacturer) => (
@@ -668,6 +782,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
             </option>
           ))}
         </SelectField>
+        {errors.manufacturerId && <Text variation="error">{errors.manufacturerId}</Text>}
       </Flex>
 
       <Grid templateColumns="1fr 1fr 1fr" gap="1rem">
@@ -726,6 +841,11 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
               variation={activeModuleIndex === index.toString() ? 'primary' : 'link'}
             >
               {module.power ? `${module.power}W` : t('solarPanels.newModule')}
+              {errors.modules?.[index] && (
+                <Text variation="error" fontSize="small" marginLeft="0.5rem">
+                  ⚠️
+                </Text>
+              )}
             </Button>
           ))}
         </Flex>
@@ -735,13 +855,12 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
               module={modules[parseInt(activeModuleIndex)]}
               onChange={(moduleInput) => handleModuleChange(parseInt(activeModuleIndex), moduleInput)}
               onDelete={modules.length > 1 ? () => handleDeleteModule(parseInt(activeModuleIndex)) : undefined}
+              errors={errors.modules?.[parseInt(activeModuleIndex)]}
               t={t}
             />
           </Card>
         )}
       </Flex>
-
-      {error && <Text variation="error">{error}</Text>}
 
       <Flex direction="row" gap="1rem">
         <Button variation="primary" onClick={handleSubmit}>
