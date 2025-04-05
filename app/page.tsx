@@ -9,19 +9,17 @@ import '@aws-amplify/ui-react/styles/flex.layer.css' // component specific
 import '@aws-amplify/ui-react/styles/grid.layer.css' // component specific
 import '@aws-amplify/ui-react/styles/table.layer.css';
 import React, { useState, useEffect } from "react";
-import { generateClient } from "aws-amplify/api";
+import { generateClient } from "aws-amplify/data";
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 import ManufacturerForm from './components/ManufacturerForm';
 import SolarPanelForm from './components/SolarPanelForm';
 import Modal from './components/Modal';
-import Autocomplete from './components/Autocomplete';
 import VoltageTable from './components/VoltageTable';
-import PanelParametersTable from './components/PanelParametersTable';
 import { Button, Card, Flex, Text, SliderField, Grid, Label, Input, SelectField } from '@aws-amplify/ui-react';
 import { useTranslation } from './hooks/useTranslation';
 import { useLanguageContext } from './contexts/LanguageContext';
-import { Schema } from '@/amplify/data/resource';
+import { type Schema } from '@/amplify/data/resource';
 import { 
   Manufacturer, 
   SolarPanel, 
@@ -32,50 +30,10 @@ import {
   AmplifyModule,
   AmplifyPanelCharacteristics
 } from './types';
-import { DataStore } from '@aws-amplify/datastore';
 
 Amplify.configure(outputs);
 
 const client = generateClient<Schema>();
-
-type ApiSolarPanel = {
-  id: string;
-  name: string;
-  manufacturerId: string;
-  temperatureCoefficientOfVOC: number;
-  temperatureCoefficientOfISC: number;
-  temperatureCoefficientOfPmax: number;
-  modules?: {
-    items: ApiModule[];
-  };
-};
-
-type ApiModule = {
-  id: string;
-  power: number;
-  solarPanelId: string;
-  PanelCharacteristics?: {
-    items: PanelCharacteristics[];
-  };
-};
-
-interface AutocompleteProps<T> {
-  value: string;
-  onChange: (value: string) => void;
-  onSelect: (item: T) => void;
-  options: T[];
-  getOptionLabel: (item: T) => string;
-  placeholder: string;
-  id?: string;
-}
-
-interface ModalProps {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-  isOpen: boolean;
-  type?: 'manufacturer' | 'solarPanel';
-}
 
 interface ModuleSelectorProps {
   modules: Module[];
@@ -122,28 +80,34 @@ function ModuleSelector({ modules, selectedModuleId, onModuleSelect }: ModuleSel
 }
 
 // Transform API data to client types
-const transformManufacturer = (data: AmplifyManufacturer): Manufacturer => ({
-  id: data.id,
-  name: data.name,
-  solarPanels: []
-});
+const transformManufacturer = (data: any): Manufacturer => {
+  return {
+    id: data.id,
+    name: data.name,
+    solarPanels: data.solarPanels?.items?.map((panel: any) => transformSolarPanel(panel)) || []
+  };
+};
 
-const transformSolarPanel = (data: AmplifySolarPanel, moduleData: AmplifyModule[] = []): SolarPanel => ({
-  id: data.id,
-  name: data.name,
-  manufacturerId: data.manufacturerId,
-  temperatureCoefficientOfVOC: data.temperatureCoefficientOfVOC,
-  temperatureCoefficientOfISC: data.temperatureCoefficientOfISC,
-  temperatureCoefficientOfPmax: data.temperatureCoefficientOfPmax,
-  modules: moduleData.map(transformModule)
-});
+const transformSolarPanel = (data: any, modules?: any[]): SolarPanel => {
+  return {
+    id: data.id,
+    name: data.name,
+    manufacturerId: data.manufacturerId,
+    temperatureCoefficientOfVOC: data.temperatureCoefficientOfVOC || 0,
+    temperatureCoefficientOfISC: data.temperatureCoefficientOfISC || 0,
+    temperatureCoefficientOfPmax: data.temperatureCoefficientOfPmax || 0,
+    modules: modules?.map(transformModule) || []
+  };
+};
 
-const transformModule = (data: AmplifyModule): Module => ({
-  id: data.id,
-  power: data.power,
-  solarPanelId: data.solarPanelId,
-  characteristics: (data.characteristics?.items || []) as PanelCharacteristics[]
-});
+const transformModule = (data: any): Module => {
+  return {
+    id: data.id,
+    power: data.power,
+    solarPanelId: data.solarPanelId,
+    characteristics: data.characteristics?.items || []
+  };
+};
 
 export default function Home() {
   const { language, toggleLanguage } = useLanguageContext();
@@ -246,7 +210,7 @@ export default function Home() {
         // Загружаем производителей
         const manufacturerResult = await client.models.Manufacturer.list();
         console.log('Manufacturers loaded:', manufacturerResult.data);
-        setManufacturers(manufacturerResult.data.map(item => transformManufacturer(item as AmplifyManufacturer)));
+        setManufacturers(manufacturerResult.data.map(transformManufacturer));
 
         // Загружаем солнечные панели
         const solarPanelResult = await client.models.SolarPanel.list();
@@ -280,8 +244,8 @@ export default function Home() {
             );
 
             return transformSolarPanel(
-              panel as AmplifySolarPanel,
-              modulesWithCharacteristics as AmplifyModule[]
+              panel,
+              modulesWithCharacteristics
             );
           })
         );
@@ -298,7 +262,7 @@ export default function Home() {
     // Подписка на обновления производителей
     const manufacturerSubscription = client.models.Manufacturer.observeQuery().subscribe({
       next: ({ items }) => {
-        setManufacturers(items.map(item => transformManufacturer(item as AmplifyManufacturer)));
+        setManufacturers(items.map(transformManufacturer));
       }
     });
 
@@ -337,8 +301,8 @@ export default function Home() {
               );
 
               return transformSolarPanel(
-                panel as AmplifySolarPanel,
-                modulesWithCharacteristics as AmplifyModule[]
+                panel,
+                modulesWithCharacteristics
               );
             })
           );
@@ -475,7 +439,7 @@ export default function Home() {
     return `${selectedSolarPanel?.name || ''} - ${module.power}W`;
   };
 
-  const handlePanelSelect = async (data: AmplifySolarPanel | null) => {
+  const handlePanelSelect = async (data: any) => {
     if (!data) {
       setSelectedSolarPanel(undefined);
       setSelectedModule(null);
@@ -511,7 +475,7 @@ export default function Home() {
       // Трансформируем панель с загруженными модулями
       const transformedPanel = transformSolarPanel(
         data,
-        modulesWithCharacteristics as AmplifyModule[]
+        modulesWithCharacteristics
       );
 
       console.log('Selected panel with modules:', transformedPanel);
@@ -534,12 +498,12 @@ export default function Home() {
 
   const handlePanelCreate = (panel: SolarPanel) => {
     if (activeTab === 'calculation') {
-      handlePanelSelect(panel as AmplifySolarPanel);
+      handlePanelSelect(panel);
     }
     setIsModalOpen(false);
   };
 
-  const handleManufacturerSelect = (data: AmplifyManufacturer | null) => {
+  const handleManufacturerSelect = (data: any | null) => {
     setSelectedManufacturer(data ? transformManufacturer(data) : undefined);
     setSelectedSolarPanel(undefined);
     setSelectedModule(null);
@@ -598,7 +562,7 @@ export default function Home() {
                   try {
                     const panelResult = await client.models.SolarPanel.get({ id: panelId });
                     if (panelResult.data) {
-                      handlePanelSelect(panelResult.data as AmplifySolarPanel);
+                      handlePanelSelect(panelResult.data);
                     }
                   } catch (error) {
                     console.error('Error loading solar panel:', error);

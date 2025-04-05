@@ -1,55 +1,9 @@
-import { Schema } from '@/amplify/data/resource';
-import { ClientSchema } from '@/amplify/data/datastore';
+import { type Schema } from '@/amplify/data/resource';
 
-export type AmplifyManufacturer = ClientSchema['Manufacturer'];
-export type AmplifySolarPanel = ClientSchema['SolarPanel'];
-export type AmplifyModule = ClientSchema['Module'];
-export type AmplifyPanelCharacteristics = ClientSchema['PanelCharacteristics'];
-
-export interface ApiManufacturer {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  solarPanels: {
-    items: ApiSolarPanel[];
-  };
-}
-
-export interface ApiSolarPanel {
-  id: string;
-  name: string;
-  manufacturerId: string;
-  manufacturer: ApiManufacturer;
-  modules: {
-    items: ApiModule[];
-  };
-  temperatureCoefficientOfPmax: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ApiModule {
-  id: string;
-  power: number;
-  solarPanelId: string;
-  characteristics: {
-    items: PanelCharacteristics[];
-  };
-}
-
-export type CharacteristicType = 'STC' | 'NOCT' | 'NMOT';
-
-export interface PanelCharacteristics {
-  id: string;
-  type: CharacteristicType;
-  moduleId: string;
-  maximumPower: number;
-  openCircuitVoltage: number;
-  shortCircuitCurrent: number;
-  voltageAtMaximumPower: number;
-  currentAtMaximumPower: number;
-}
+export type AmplifyManufacturer = Schema['Manufacturer'];
+export type AmplifySolarPanel = Schema['SolarPanel'];
+export type AmplifyModule = Schema['Module'];
+export type AmplifyPanelCharacteristics = Schema['PanelCharacteristics'];
 
 // Client-side types
 export interface Manufacturer {
@@ -74,6 +28,19 @@ export interface Module {
   solarPanelId: string;
   characteristics: PanelCharacteristics[];
 }
+
+export interface PanelCharacteristics {
+  id: string;
+  type: CharacteristicType;
+  moduleId: string;
+  maximumPower: number;
+  openCircuitVoltage: number;
+  shortCircuitCurrent: number;
+  voltageAtMaximumPower: number;
+  currentAtMaximumPower: number;
+}
+
+export type CharacteristicType = 'STC' | 'NOCT' | 'NMOT';
 
 export interface PanelParametersTableProps {
   characteristics: PanelCharacteristics[];
