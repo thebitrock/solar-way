@@ -420,29 +420,98 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
       moduleErrors.power = t('errors.powerRequired');
     }
 
-    // Проверка характеристик STC (обязательные)
-    const stcErrors: Record<string, string> = {};
-    if (!module.characteristics.stc.maximumPower) {
-      stcErrors.maximumPower = t('errors.maximumPowerRequired');
-    }
-    if (!module.characteristics.stc.openCircuitVoltage) {
-      stcErrors.openCircuitVoltage = t('errors.openCircuitVoltageRequired');
-    }
-    if (!module.characteristics.stc.shortCircuitCurrent) {
-      stcErrors.shortCircuitCurrent = t('errors.shortCircuitCurrentRequired');
-    }
-    if (!module.characteristics.stc.voltageAtMaximumPower) {
-      stcErrors.voltageAtMaximumPower = t('errors.voltageAtMaximumPowerRequired');
-    }
-    if (!module.characteristics.stc.currentAtMaximumPower) {
-      stcErrors.currentAtMaximumPower = t('errors.currentAtMaximumPowerRequired');
-    }
+    // Проверяем, заполнены ли какие-либо характеристики
+    const hasStcValues = Object.values(module.characteristics.stc).some(value => value !== '');
+    const hasNoctValues = Object.values(module.characteristics.noct).some(value => value !== '');
+    const hasNmotValues = Object.values(module.characteristics.nmot).some(value => value !== '');
 
-    if (Object.keys(stcErrors).length > 0) {
+    // Если нет ни одних заполненных характеристик, требуем хотя бы одни
+    if (!hasStcValues && !hasNoctValues && !hasNmotValues) {
       if (!moduleErrors.characteristics) {
         moduleErrors.characteristics = {};
       }
-      moduleErrors.characteristics.stc = stcErrors;
+      moduleErrors.characteristics.stc = {
+        maximumPower: t('errors.atLeastOneCharacteristicsRequired')
+      };
+    } else {
+      // Проверяем только те характеристики, которые начали заполнять
+      if (hasStcValues) {
+        const stcErrors: Record<string, string> = {};
+        if (!module.characteristics.stc.maximumPower) {
+          stcErrors.maximumPower = t('errors.maximumPowerRequired');
+        }
+        if (!module.characteristics.stc.openCircuitVoltage) {
+          stcErrors.openCircuitVoltage = t('errors.openCircuitVoltageRequired');
+        }
+        if (!module.characteristics.stc.shortCircuitCurrent) {
+          stcErrors.shortCircuitCurrent = t('errors.shortCircuitCurrentRequired');
+        }
+        if (!module.characteristics.stc.voltageAtMaximumPower) {
+          stcErrors.voltageAtMaximumPower = t('errors.voltageAtMaximumPowerRequired');
+        }
+        if (!module.characteristics.stc.currentAtMaximumPower) {
+          stcErrors.currentAtMaximumPower = t('errors.currentAtMaximumPowerRequired');
+        }
+
+        if (Object.keys(stcErrors).length > 0) {
+          if (!moduleErrors.characteristics) {
+            moduleErrors.characteristics = {};
+          }
+          moduleErrors.characteristics.stc = stcErrors;
+        }
+      }
+
+      if (hasNoctValues) {
+        const noctErrors: Record<string, string> = {};
+        if (!module.characteristics.noct.maximumPower) {
+          noctErrors.maximumPower = t('errors.maximumPowerRequired');
+        }
+        if (!module.characteristics.noct.openCircuitVoltage) {
+          noctErrors.openCircuitVoltage = t('errors.openCircuitVoltageRequired');
+        }
+        if (!module.characteristics.noct.shortCircuitCurrent) {
+          noctErrors.shortCircuitCurrent = t('errors.shortCircuitCurrentRequired');
+        }
+        if (!module.characteristics.noct.voltageAtMaximumPower) {
+          noctErrors.voltageAtMaximumPower = t('errors.voltageAtMaximumPowerRequired');
+        }
+        if (!module.characteristics.noct.currentAtMaximumPower) {
+          noctErrors.currentAtMaximumPower = t('errors.currentAtMaximumPowerRequired');
+        }
+
+        if (Object.keys(noctErrors).length > 0) {
+          if (!moduleErrors.characteristics) {
+            moduleErrors.characteristics = {};
+          }
+          moduleErrors.characteristics.noct = noctErrors;
+        }
+      }
+
+      if (hasNmotValues) {
+        const nmotErrors: Record<string, string> = {};
+        if (!module.characteristics.nmot.maximumPower) {
+          nmotErrors.maximumPower = t('errors.maximumPowerRequired');
+        }
+        if (!module.characteristics.nmot.openCircuitVoltage) {
+          nmotErrors.openCircuitVoltage = t('errors.openCircuitVoltageRequired');
+        }
+        if (!module.characteristics.nmot.shortCircuitCurrent) {
+          nmotErrors.shortCircuitCurrent = t('errors.shortCircuitCurrentRequired');
+        }
+        if (!module.characteristics.nmot.voltageAtMaximumPower) {
+          nmotErrors.voltageAtMaximumPower = t('errors.voltageAtMaximumPowerRequired');
+        }
+        if (!module.characteristics.nmot.currentAtMaximumPower) {
+          nmotErrors.currentAtMaximumPower = t('errors.currentAtMaximumPowerRequired');
+        }
+
+        if (Object.keys(nmotErrors).length > 0) {
+          if (!moduleErrors.characteristics) {
+            moduleErrors.characteristics = {};
+          }
+          moduleErrors.characteristics.nmot = nmotErrors;
+        }
+      }
     }
 
     return moduleErrors;
