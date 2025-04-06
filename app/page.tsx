@@ -531,10 +531,10 @@ export default function Home() {
   const handleModuleSelect = (moduleId: string) => {
     if (!selectedSolarPanel || !selectedSolarPanel.modules) return;
     
-    const module = selectedSolarPanel.modules.find(m => m.id === moduleId);
-    if (module) {
-      console.log('Module selected:', module);
-      setSelectedModule(module);
+    const solarPanelModule = selectedSolarPanel.modules.find(m => m.id === moduleId);
+    if (solarPanelModule) {
+      console.log('Module selected:', solarPanelModule);
+      setSelectedModule(solarPanelModule);
     }
   };
 

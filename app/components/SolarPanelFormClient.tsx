@@ -318,7 +318,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
             if (modulesResult.data && modulesResult.data.length > 0) {
               const loadedModules: ModuleInput[] = [];
 
-              for (const module of modulesResult.data) {
+              for (const solarPanelModule of modulesResult.data) {
                 // Проверяем, есть ли доступ к модели PanelCharacteristics
                 if (!client.models.PanelCharacteristics) {
                   console.warn('PanelCharacteristics model is not available yet in SolarPanelFormClient');
@@ -327,14 +327,14 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
 
                 try {
                   const characteristicsResult = await client.models.PanelCharacteristics.list({
-                    filter: { moduleId: { eq: module.id } }
+                    filter: { moduleId: { eq: solarPanelModule.id } }
                   });
 
                   if (!mounted) return;
 
                   const moduleInput: ModuleInput = {
-                    id: module.id,
-                    power: module.power.toString(),
+                    id: solarPanelModule.id,
+                    power: solarPanelModule.power.toString(),
                     characteristics: {
                       stc: { ...emptyCharacteristics },
                       noct: { ...emptyCharacteristics },
@@ -604,13 +604,13 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
             const modulesToDelete = existingModules.data.filter(m => !moduleIdsToKeep.has(m.id));
 
             // Удаляем ненужные модули и их характеристики
-            for (const module of modulesToDelete) {
+            for (const solarPanelModule of modulesToDelete) {
               // Проверяем, есть ли доступ к модели PanelCharacteristics
               if (client.models.PanelCharacteristics) {
                 // Сначала удаляем характеристики модуля
                 try {
                   const existingCharacteristics = await client.models.PanelCharacteristics.list({
-                    filter: { moduleId: { eq: module.id } }
+                    filter: { moduleId: { eq: solarPanelModule.id } }
                   });
 
                   if (existingCharacteristics.data) {
@@ -627,7 +627,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
 
               // Затем удаляем сам модуль
               try {
-                await client.models.Module.delete({ id: module.id });
+                await client.models.Module.delete({ id: solarPanelModule.id });
               } catch (err) {
                 console.error('Error deleting module:', err);
               }
