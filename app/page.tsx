@@ -8,7 +8,7 @@ import '@aws-amplify/ui-react/styles/card.layer.css' // component specific
 import '@aws-amplify/ui-react/styles/flex.layer.css' // component specific
 import '@aws-amplify/ui-react/styles/grid.layer.css' // component specific
 import '@aws-amplify/ui-react/styles/table.layer.css';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { generateClient } from "aws-amplify/data";
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
@@ -366,94 +366,87 @@ export default function Home() {
     };
   }, []);
 
-  // Расчет напряжений для разных температур
-  const calculateVoltages = () => {
-    if (!selectedSolarPanel || !selectedModule) return;
+  const calculateValuesAtTemperature = useCallback((module: Module, temperature: number, tempCoeffVoc: number, tempCoeffIsc: number, tempCoeffPmax: number) => {
+    if (!module.characteristics) return null;
     
-    const characteristics = selectedModule.characteristics || [];
-    if (characteristics.length === 0) {
-      console.log('No characteristics available for voltage calculation');
+    const stc = module.characteristics.find((c: PanelCharacteristics) => c.type === 'STC');
+    const noct = module.characteristics.find((c: PanelCharacteristics) => c.type === 'NOCT');
+    const nmot = module.characteristics.find((c: PanelCharacteristics) => c.type === 'NMOT');
+
+    const deltaT = temperature - 25; // STC temperature is 25°C
+    const deltaTNoct = temperature - 20; // NOCT temperature is 20°C
+    const deltaTNmot = temperature - 20; // NMOT temperature is 20°C
+
+    return {
+      stc: stc ? {
+        voltage: parseFloat((stc.openCircuitVoltage * (1 + (tempCoeffVoc / 100) * deltaT) * panelCount).toFixed(2)),
+        current: parseFloat((stc.shortCircuitCurrent * (1 + (tempCoeffIsc / 100) * deltaT)).toFixed(2)),
+        power: parseFloat((stc.maximumPower * (1 + (tempCoeffPmax / 100) * deltaT) * panelCount).toFixed(2)),
+      } : undefined,
+      noct: noct ? {
+        voltage: parseFloat((noct.openCircuitVoltage * (1 + (tempCoeffVoc / 100) * deltaTNoct) * panelCount).toFixed(2)),
+        current: parseFloat((noct.shortCircuitCurrent * (1 + (tempCoeffIsc / 100) * deltaTNoct)).toFixed(2)),
+        power: parseFloat((noct.maximumPower * (1 + (tempCoeffPmax / 100) * deltaTNoct) * panelCount).toFixed(2)),
+      } : undefined,
+      nmot: nmot ? {
+        voltage: parseFloat((nmot.openCircuitVoltage * (1 + (tempCoeffVoc / 100) * deltaTNmot) * panelCount).toFixed(2)),
+        current: parseFloat((nmot.shortCircuitCurrent * (1 + (tempCoeffIsc / 100) * deltaTNmot)).toFixed(2)),
+        power: parseFloat((nmot.maximumPower * (1 + (tempCoeffPmax / 100) * deltaTNmot) * panelCount).toFixed(2)),
+      } : undefined,
+    };
+  }, [panelCount]);
+
+  const calculateVoltages = useCallback(() => {
+    if (!selectedSolarPanel || !selectedModule) {
+      setCalculatedVoltages([]);
       return;
     }
-    
-    console.log('Calculating voltages with characteristics:', characteristics);
 
-    // Получаем характеристики разных типов
-    const stc = characteristics.find(c => c.type === 'STC');
-    const noct = characteristics.find(c => c.type === 'NOCT');
-    const nmot = characteristics.find(c => c.type === 'NMOT');
+    const voltages: Array<{
+      temperature: number;
+      voltage?: number;
+      current?: number;
+      power?: number;
+      voltageNOCT?: number;
+      currentNOCT?: number;
+      powerNOCT?: number;
+      voltageNMOT?: number;
+      currentNMOT?: number;
+      powerNMOT?: number;
+    }> = [];
 
-    if (!stc) {
-      console.log('STC characteristics not found, cannot calculate voltages');
-      return;
+    for (let temp = minTemp; temp <= maxTemp; temp += 5) {
+      const values = calculateValuesAtTemperature(
+        selectedModule,
+        temp,
+        selectedSolarPanel.temperatureCoefficientOfVOC,
+        selectedSolarPanel.temperatureCoefficientOfISC,
+        selectedSolarPanel.temperatureCoefficientOfPmax
+      );
+
+      if (values) {
+        voltages.push({
+          temperature: temp,
+          voltage: values.stc?.voltage,
+          current: values.stc?.current,
+          power: values.stc?.power,
+          voltageNOCT: values.noct?.voltage,
+          currentNOCT: values.noct?.current,
+          powerNOCT: values.noct?.power,
+          voltageNMOT: values.nmot?.voltage,
+          currentNMOT: values.nmot?.current,
+          powerNMOT: values.nmot?.power,
+        });
+      }
     }
 
-    // Коэффициент Voc (% на градус)
-    const tempCoeffVoc = selectedSolarPanel.temperatureCoefficientOfVOC / 100;
-    const tempCoeffIsc = selectedSolarPanel.temperatureCoefficientOfISC / 100;
-    const tempCoeffPmax = selectedSolarPanel.temperatureCoefficientOfPmax / 100;
-
-    // Массив температур с шагом 5 градусов
-    const temperatures = [];
-    for (let temp = minTemp; temp <= maxTemp; temp += 1) {
-      temperatures.push(temp);
-    }
-
-    // Для каждой температуры рассчитываем напряжение и ток
-    const voltages = temperatures.map(temp => {
-      // Температурные условия STC = 25°C
-      const deltaT = temp - 25;
-
-      // Расчет для STC
-      const vocAtTemp = stc.openCircuitVoltage * (1 + tempCoeffVoc * deltaT);
-      const iscAtTemp = stc.shortCircuitCurrent * (1 + tempCoeffIsc * deltaT);
-      const pmaxAtTemp = stc.maximumPower * (1 + tempCoeffPmax * deltaT);
-
-      // Расчет для NOCT и NMOT если они есть
-      let vocAtTempNOCT = undefined;
-      let iscAtTempNOCT = undefined;
-      let pmaxAtTempNOCT = undefined;
-      let vocAtTempNMOT = undefined;
-      let iscAtTempNMOT = undefined;
-      let pmaxAtTempNMOT = undefined;
-
-      if (noct) {
-        const noctTemp = 20;
-        const deltaTNoct = temp - noctTemp;
-        vocAtTempNOCT = noct.openCircuitVoltage * (1 + tempCoeffVoc * deltaTNoct);
-        iscAtTempNOCT = noct.shortCircuitCurrent * (1 + tempCoeffIsc * deltaTNoct);
-        pmaxAtTempNOCT = noct.maximumPower * (1 + tempCoeffPmax * deltaTNoct);
-      }
-
-      if (nmot) {
-        const nmotTemp = 20;
-        const deltaTNmot = temp - nmotTemp;
-        vocAtTempNMOT = nmot.openCircuitVoltage * (1 + tempCoeffVoc * deltaTNmot);
-        iscAtTempNMOT = nmot.shortCircuitCurrent * (1 + tempCoeffIsc * deltaTNmot);
-        pmaxAtTempNMOT = nmot.maximumPower * (1 + tempCoeffPmax * deltaTNmot);
-      }
-
-      return {
-        temperature: temp,
-        voltage: parseFloat((vocAtTemp * panelCount).toFixed(2)),
-        current: parseFloat(iscAtTemp.toFixed(2)),
-        power: parseFloat((pmaxAtTemp * panelCount).toFixed(2)),
-        voltageNOCT: vocAtTempNOCT ? parseFloat((vocAtTempNOCT * panelCount).toFixed(2)) : undefined,
-        currentNOCT: iscAtTempNOCT ? parseFloat(iscAtTempNOCT.toFixed(2)) : undefined,
-        powerNOCT: pmaxAtTempNOCT ? parseFloat((pmaxAtTempNOCT * panelCount).toFixed(2)) : undefined,
-        voltageNMOT: vocAtTempNMOT ? parseFloat((vocAtTempNMOT * panelCount).toFixed(2)) : undefined,
-        currentNMOT: iscAtTempNMOT ? parseFloat(iscAtTempNMOT.toFixed(2)) : undefined,
-        powerNMOT: pmaxAtTempNMOT ? parseFloat((pmaxAtTempNMOT * panelCount).toFixed(2)) : undefined
-      };
-    });
-
-    console.log('Calculated voltages:', voltages);
+    console.log('Calculated values:', voltages);
     setCalculatedVoltages(voltages);
-  };
+  }, [selectedSolarPanel, selectedModule, minTemp, maxTemp, calculateValuesAtTemperature]);
 
   useEffect(() => {
     calculateVoltages();
-  }, [selectedSolarPanel, selectedModule, panelCount, minTemp, maxTemp]);
+  }, [calculateVoltages]);
 
   const handleDeleteManufacturer = async (id: string) => {
     try {

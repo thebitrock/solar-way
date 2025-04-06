@@ -293,104 +293,90 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
 
         // Загружаем производителей
         const manufacturersResult = await client.models.Manufacturer.list();
-        if (!mounted) return;
-        
-        if (manufacturersResult.data) {
+        if (mounted && manufacturersResult.data) {
           setManufacturers(manufacturersResult.data);
         }
 
-        // Если редактируем панель, загружаем модули и их характеристики
+        // Если есть ID панели, загружаем данные панели
         if (solarPanel?.id) {
-          // Проверяем, есть ли доступ к модели Module
-          if (!client.models.Module) {
-            console.warn('Module model is not available yet in SolarPanelFormClient');
-            setIsLoading(false);
-            return;
-          }
+          const panelResult = await client.models.SolarPanel.get({ id: solarPanel.id });
+          if (mounted && panelResult.data) {
+            setName(panelResult.data.name);
+            setManufacturerId(panelResult.data.manufacturerId);
+            setTemperatureCoefficientOfVOC(panelResult.data.temperatureCoefficientOfVOC.toString());
+            setTemperatureCoefficientOfISC(panelResult.data.temperatureCoefficientOfISC.toString());
+            setTemperatureCoefficientOfPmax(panelResult.data.temperatureCoefficientOfPmax.toString());
 
-          try {
+            // Загружаем модули для панели
             const modulesResult = await client.models.Module.list({
               filter: { solarPanelId: { eq: solarPanel.id } }
             });
 
-            if (!mounted) return;
-
-            if (modulesResult.data && modulesResult.data.length > 0) {
-              const loadedModules: ModuleInput[] = [];
-
-              for (const solarPanelModule of modulesResult.data) {
-                // Проверяем, есть ли доступ к модели PanelCharacteristics
-                if (!client.models.PanelCharacteristics) {
-                  console.warn('PanelCharacteristics model is not available yet in SolarPanelFormClient');
-                  continue;
-                }
-
-                try {
+            if (mounted && modulesResult.data) {
+              // Загружаем характеристики для каждого модуля
+              const modulesWithCharacteristics = await Promise.all(
+                modulesResult.data.map(async (module) => {
                   const characteristicsResult = await client.models.PanelCharacteristics.list({
-                    filter: { moduleId: { eq: solarPanelModule.id } }
+                    filter: { moduleId: { eq: module.id } }
                   });
 
-                  if (!mounted) return;
+                  const stc = characteristicsResult.data.find(c => c.type === 'STC');
+                  const noct = characteristicsResult.data.find(c => c.type === 'NOCT');
+                  const nmot = characteristicsResult.data.find(c => c.type === 'NMOT');
 
-                  const moduleInput: ModuleInput = {
-                    id: solarPanelModule.id,
-                    power: solarPanelModule.power.toString(),
+                  return {
+                    id: module.id,
+                    power: module.power.toString(),
                     characteristics: {
-                      stc: { ...emptyCharacteristics },
-                      noct: { ...emptyCharacteristics },
-                      nmot: { ...emptyCharacteristics },
-                    }
+                      stc: stc ? {
+                        maximumPower: stc.maximumPower.toString(),
+                        openCircuitVoltage: stc.openCircuitVoltage.toString(),
+                        shortCircuitCurrent: stc.shortCircuitCurrent.toString(),
+                        voltageAtMaximumPower: stc.voltageAtMaximumPower.toString(),
+                        currentAtMaximumPower: stc.currentAtMaximumPower.toString(),
+                      } : {
+                        maximumPower: '',
+                        openCircuitVoltage: '',
+                        shortCircuitCurrent: '',
+                        voltageAtMaximumPower: '',
+                        currentAtMaximumPower: '',
+                      },
+                      noct: noct ? {
+                        maximumPower: noct.maximumPower.toString(),
+                        openCircuitVoltage: noct.openCircuitVoltage.toString(),
+                        shortCircuitCurrent: noct.shortCircuitCurrent.toString(),
+                        voltageAtMaximumPower: noct.voltageAtMaximumPower.toString(),
+                        currentAtMaximumPower: noct.currentAtMaximumPower.toString(),
+                      } : {
+                        maximumPower: '',
+                        openCircuitVoltage: '',
+                        shortCircuitCurrent: '',
+                        voltageAtMaximumPower: '',
+                        currentAtMaximumPower: '',
+                      },
+                      nmot: nmot ? {
+                        maximumPower: nmot.maximumPower.toString(),
+                        openCircuitVoltage: nmot.openCircuitVoltage.toString(),
+                        shortCircuitCurrent: nmot.shortCircuitCurrent.toString(),
+                        voltageAtMaximumPower: nmot.voltageAtMaximumPower.toString(),
+                        currentAtMaximumPower: nmot.currentAtMaximumPower.toString(),
+                      } : {
+                        maximumPower: '',
+                        openCircuitVoltage: '',
+                        shortCircuitCurrent: '',
+                        voltageAtMaximumPower: '',
+                        currentAtMaximumPower: '',
+                      },
+                    },
                   };
-
-                  if (characteristicsResult.data) {
-                    characteristicsResult.data.forEach((char: any) => {
-                      const data = {
-                        maximumPower: char.maximumPower.toString(),
-                        openCircuitVoltage: char.openCircuitVoltage.toString(),
-                        shortCircuitCurrent: char.shortCircuitCurrent.toString(),
-                        voltageAtMaximumPower: char.voltageAtMaximumPower.toString(),
-                        currentAtMaximumPower: char.currentAtMaximumPower.toString(),
-                      };
-
-                      switch (char.type) {
-                        case 'STC':
-                          moduleInput.characteristics.stc = data;
-                          break;
-                        case 'NOCT':
-                          moduleInput.characteristics.noct = data;
-                          break;
-                        case 'NMOT':
-                          moduleInput.characteristics.nmot = data;
-                          break;
-                      }
-                    });
-                  }
-
-                  loadedModules.push(moduleInput);
-                } catch (err) {
-                  console.error('Error loading characteristics for module:', err);
-                  // Продолжаем обработку других модулей даже при ошибке с одним из них
-                }
-              }
-
-              setModules(loadedModules);
-            } else {
-              // Если нет модулей, добавляем пустой модуль по умолчанию
-              setModules([{ ...emptyModule }]);
+                })
+              );
+              setModules(modulesWithCharacteristics);
             }
-          } catch (err) {
-            console.error('Error loading modules for panel:', err);
-            // При ошибке загрузки модулей добавляем пустой модуль
-            setModules([{ ...emptyModule }]);
           }
-        } else {
-          // Для новой панели добавляем пустой модуль
-          setModules([{ ...emptyModule }]);
         }
       } catch (error) {
-        if (!mounted) return;
         console.error('Error loading data:', error);
-        setErrors({ name: t('errors.unknown') });
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -403,7 +389,7 @@ export default function SolarPanelFormClient({ solarPanel, onSuccess }: SolarPan
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [solarPanel?.id, t]);
 
   const validateModule = (module: ModuleInput, index: number) => {
     const moduleErrors: {
