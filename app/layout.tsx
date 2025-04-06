@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { Amplify } from 'aws-amplify';
-import config from '@/amplifyconfiguration.json';
 import { Providers } from './components/Providers';
-
+import outputs from '../amplify_outputs.json';
+import { parseAmplifyConfig } from "aws-amplify/utils";
 import "./globals.css";
 import '@aws-amplify/ui-react/styles.css';
 
-Amplify.configure(config);
+const amplifyConfig = parseAmplifyConfig(outputs);
+
+Amplify.configure({
+  ...amplifyConfig
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
