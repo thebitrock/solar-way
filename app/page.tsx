@@ -415,7 +415,7 @@ export default function Home() {
       powerNMOT?: number;
     }> = [];
 
-    for (let temp = minTemp; temp <= maxTemp; temp += 5) {
+    for (let temp = minTemp; temp <= maxTemp; temp += 1) {
       const values = calculateValuesAtTemperature(
         selectedModule,
         temp,
